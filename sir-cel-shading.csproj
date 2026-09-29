@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Sir Cel Shading, greffon pour Space Engineers, sur la machine du joueur
-    (Plugin Loader). Plugin Loader compile lui-meme le dossier Source ; ce
-    projet sert aux compilations locales.
+    Sir Cel Shading, a Space Engineers plugin that runs on the player's machine
+    (Pulsar). Pulsar compiles the Source folder itself; this project is for
+    local builds.
 
-    Chemin du jeu : la valeur Bin64, sinon la variable SE_BIN64, sinon les
-    emplacements Steam les plus courants. Pour un autre emplacement, copier
-    Directory.Build.props.example en Directory.Build.props.
+    Game path: the Bin64 value, otherwise the SE_BIN64 variable, otherwise the
+    most common Steam locations. For another location, copy
+    Directory.Build.props.example to Directory.Build.props.
   -->
 
   <PropertyGroup>
@@ -40,7 +40,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
-    <!-- Plugin Loader le fournit au jeu : il ne part pas avec le greffon. -->
+    <!-- Pulsar provides it to the game: it does not ship with the plugin. -->
     <PackageReference Include="Lib.Harmony" Version="2.3.3" ExcludeAssets="runtime" PrivateAssets="all" />
   </ItemGroup>
 
@@ -59,9 +59,9 @@
     <Reference Include="SharpDX.D3DCompiler"><HintPath>$(Bin64)\SharpDX.D3DCompiler.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 
-  <Target Name="VerifierLeJeu" BeforeTargets="ResolveAssemblyReferences">
+  <Target Name="CheckTheGame" BeforeTargets="ResolveAssemblyReferences">
     <Error Condition="!Exists('$(Bin64)\Sandbox.Game.dll')"
-           Text="Space Engineers introuvable (Bin64 = '$(Bin64)'). Donner le chemin de Bin64 : dotnet build -p:Bin64=..., variable SE_BIN64, ou Directory.Build.props (voir Directory.Build.props.example)." />
+           Text="Space Engineers not found (Bin64 = '$(Bin64)'). Give the path of Bin64: dotnet build -p:Bin64=..., the SE_BIN64 variable, or Directory.Build.props (see Directory.Build.props.example)." />
   </Target>
 
 </Project>

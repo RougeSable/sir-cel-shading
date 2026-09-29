@@ -1,106 +1,163 @@
 # Sir Cel Shading
 
-Greffon c&ocirc;t&eacute; joueur pour Space Engineers, charg&eacute; par Plugin Loader. Il ne fait
-qu'une chose : le **cel shading**, un rendu fa&ccedil;on bande dessin&eacute;e. Contours noirs
-autour des blocs, du d&eacute;cor et des personnages ; couleurs en aplats.
+Client-side plugin for Space Engineers, loaded by Pulsar. It does one thing:
+**cel shading**, in three styles the player picks from.
 
-- Le joueur l'active ou le coupe &agrave; son gr&eacute;, sans relancer le jeu.
-- Coup&eacute;, le jeu dessine avec ses propres shaders : l'image est exactement celle
-  du jeu.
-- Tout se passe sur la machine du joueur. Rien ne passe par le serveur, et un
-  joueur sans le greffon voit le rendu du jeu.
-- L'interface (HUD, menus, textes) reste nette : elle est dessin&eacute;e apr&egrave;s l'effet.
+- **Clear line** (the default): thin, even black outlines, bright plain
+  colors, almost no shadows, in the spirit of Tintin or Moebius.
+- **Animated film**: shadows in two or three soft tones, thin outlines in a
+  darker shade of each object, a rim of light on silhouettes seen against the
+  sun, and distant things fading into the sky color.
+- **Comic book**: the original Sir Cel Shading rendering, unchanged. Black
+  outlines around blocks, scenery and characters; flat colors.
 
-## Utilisation
+Also:
 
-- **R&eacute;glages** : Plugin Loader, Sir Cel Shading, bouton des r&eacute;glages. Le
-  premier r&eacute;glage est la case **Activer le greffon**. Suivent le nombre de
-  teintes, l'&eacute;paisseur et la noirceur des contours, la sensibilit&eacute; aux ar&ecirc;tes
-  et la vivacit&eacute; des couleurs. Chaque changement se voit &agrave; l'image suivante.
-- **Discussion** : `/cel` bascule le rendu ; `/cel activer`, `/cel couper`,
-  `/cel etat`. La commande ne part pas aux autres joueurs.
-- **R&eacute;glages enregistr&eacute;s** dans `%AppData%\SpaceEngineers\Storage\sir-cel-shading\reglages.xml`.
+- The player switches style, or turns the effect on and off, at will, without
+  restarting the game.
+- Turned off, the game draws with its own shaders: the image is exactly the
+  game's.
+- Everything happens on the player's machine. Nothing goes through the server,
+  and a player without the plugin sees the game's rendering.
+- The interface (HUD, menus, texts) stays sharp: it is drawn after the effect.
 
-## Fonctionnement
+## Usage
 
-Le jeu livre ses effets d'image en source (`Content/Shaders`) et les compile
-lui-m&ecirc;me au chargement. Sir Cel Shading s'accroche &agrave; l'&eacute;tape des couleurs
-finales, `MyToneMapping.Run`, qui est un compute shader
-(`Postprocess/Tonemapping/Main.hlsl`) en trois variantes : `m_cs`,
+- **Settings**: Pulsar, Sir Cel Shading, settings button. The first setting is
+  the **Enable plugin** checkbox; right below it, **Style** offers Comic book,
+  Animated film and Clear line. Below come the settings of the selected style,
+  and only those: a setting of one style never changes another. **Style
+  defaults** resets the selected style only. Every change shows on the next
+  frame.
+  - Comic book: tones per color, outline width, outline darkness, edge
+    sensitivity, color vibrance (the settings of the previous versions).
+  - Animated film: shadow tones (2 or 3), outline strength, rim light,
+    distance haze.
+  - Clear line: outline darkness, edge sensitivity, shadows kept, color
+    vibrance.
+- **Chat**: `/cel` turns the effect on or off; `/cel comic`, `/cel animated`
+  and `/cel clearline` switch to that style (and turn the effect on);
+  `/cel on`, `/cel off`; `/cel status` names the style in use. The command is
+  not sent to other players.
+- **Saved settings** in `%AppData%\SpaceEngineers\Storage\sir-cel-shading\settings.xml`,
+  kept from one game to the next. A player who never picked a style gets Clear
+  line. The file of earlier versions (`reglages.xml`) is read once, when
+  `settings.xml` does not exist yet: the on/off switch and the Comic book
+  settings are kept, and the style is Clear line.
+
+## How it works
+
+The game ships its image effects as source (`Content/Shaders`) and compiles
+them itself when loading. Sir Cel Shading hooks the final colors step,
+`MyToneMapping.Run`, which is a compute shader
+(`Postprocess/Tonemapping/Main.hlsl`) in three variants: `m_cs`,
 `m_csAlphaLuminance`, `m_csSkip`.
 
-1. Au lancement, le greffon &eacute;crit sa variante de ce shader,
-   `Storage\sir-cel-shading\Shaders\CelShading.hlsl`. C'est le corps du jeu
-   repris &agrave; l'identique (grain, exposition, halo, courbe filmique, filtres),
-   suivi des aplats et des contours, juste avant la conversion en sRGB. Elle
-   inclut les en-t&ecirc;tes du jeu entre chevrons, donc ceux du dossier de shaders
-   du jeu.
-2. Activ&eacute;, un pr&eacute;fixe Harmony compile les trois variantes avec le compilateur
-   du jeu (`MyShaderCompiler.Compile`, qui refuse sans planter, puis
-   `MyComputeShaders.Create`). Il place ensuite la variante en cours dans le
-   champ statique du jeu, et lie la profondeur de la sc&egrave;ne
-   (`MyGBuffer.Main.ResolvedDepthStencil.SrvDepth`) en `t31`. Le postfixe rend
-   au champ le shader du jeu et d&eacute;lie `t31`. Un finaliseur fait de m&ecirc;me si le
-   passage &eacute;choue.
-3. Coup&eacute;, le pr&eacute;fixe ne touche &agrave; rien.
+1. At startup, the plugin writes its variant of that shader,
+   `Storage\sir-cel-shading\Shaders\CelShading.hlsl`. It is the game's body
+   kept as is (grain, exposure, bloom, filmic curve, filters), followed by the
+   style, right before the sRGB conversion. The three styles live in that one
+   file; the `CEL_STYLE` macro picks one. It includes the game's headers
+   between angle brackets, so those of the game's shader folder.
+2. Enabled, a Harmony prefix compiles the three variants of the selected style
+   with the game's compiler (`MyShaderCompiler.Compile`, which refuses without
+   crashing, then `MyComputeShaders.Create`). Only the settings of that style
+   are given to the compiler. The prefix then puts the current variant in the
+   game's static field and binds the scene depth
+   (`MyGBuffer.Main.ResolvedDepthStencil.SrvDepth`) in `t31`, and, for
+   Animated film and Clear line, the scene albedo (`MyGBuffer.Main.GBuffer0`)
+   in `t27`. The postfix gives the field back the game's shader and unbinds
+   `t31` and `t27`. A finalizer does the same if the pass fails.
+3. Turned off, the prefix touches nothing.
 
-**Contours.** Ils sont tir&eacute;s de la d&eacute;riv&eacute;e seconde de l'inverse de la
-distance : elle est nulle sur une surface plane, et s'allume aux silhouettes et
-aux ar&ecirc;tes. La mesure est rapport&eacute;e &agrave; la distance la plus proche du voisinage
-et &agrave; l'angle d'un pixel. Elle raisonne donc en rapport de distances, jamais en
-m&egrave;tres : une ar&ecirc;te se dessine pareil &agrave; un m&egrave;tre ou &agrave; dix kilom&egrave;tres. Le ciel
-est reconnu &agrave; la profondeur de d&eacute;gagement du jeu. La d&eacute;tection de contours du
-jeu (`Postprocess/EdgeDetection.hlsl`) ne sert pas : elle ne marque que la
-couverture de l'anticr&eacute;nelage multi-&eacute;chantillons, que le jeu n'active plus.
+Switching style compiles the new style's variants on first use, then keeps
+them: switching back is immediate.
 
-**Aplats.** La valeur de chaque couleur (son canal le plus fort, en sRGB) tombe
-sur un nombre r&eacute;glable de paliers ; la teinte est gard&eacute;e. Sous la moiti&eacute; du
-premier palier, l'image reste celle du jeu : le noir de l'espace reste noir.
+**Outlines.** They come from the second derivative of the inverse of the
+distance: it is zero on a flat surface, and lights up at silhouettes and
+edges. The measure is divided by the nearest distance of the neighborhood and
+by the angle of a pixel. It therefore works in ratios of distances, never in
+meters: an edge is drawn the same at one meter or at ten kilometers. The sky
+is recognized by the game's clear depth. The game's edge detection
+(`Postprocess/EdgeDetection.hlsl`) is not used: it only marks the coverage of
+multisample antialiasing, which the game no longer enables. Comic book draws
+them black and as wide as set; Clear line draws them one pixel wide with a
+crisp ramp, so that they stay even; Animated film draws them one pixel wide in
+a darker, deeper shade of the object's own color.
 
-**Emplacement t31.** Aucun fichier de `Content/Shaders` ne d&eacute;clare `t31`. Le
-passage du jeu n'utilise que `t0` &agrave; `t3`, `u0` et `s0` &agrave; `s3`, et le moteur
-g&egrave;re 32 emplacements par &eacute;tage.
+**Comic book flat colors.** The value of each color (its strongest channel, in
+sRGB) falls on an adjustable number of steps; the hue is kept. Under half of
+the first step the image stays the game's: the black of space stays black.
+This style compiles to exactly the same GPU instructions as before the styles
+existed.
 
-**Co&ucirc;t.** Neuf lectures de profondeur et quelques op&eacute;rations par pixel, dans
-un passage que le jeu ex&eacute;cute de toute fa&ccedil;on. Il ne s'ajoute aucun passage
-plein &eacute;cran.
+**Light and color (Animated film, Clear line).** The final color divided by
+the albedo of the object gives the light it receives. Animated film brings
+that light onto two or three soft tones, the darkest never black; Clear line
+lifts the shadows until only the set share of them remains. Light above the
+object's own color (highlights, lamps, flames) is left alone. Where the albedo
+cannot be read (the sky, an almost black object, multisampling), the game's
+lighting is kept.
 
-## Arr&ecirc;ts et cohabitation
+**Rim light (Animated film).** A pixel within a few pixels of something at
+least a third farther, or of the sky, is on a silhouette. It receives a thin
+edge of sunlight, in the sun's color, the more so as the camera faces the sun.
 
-Tout nom interne du moteur est r&eacute;solu par r&eacute;flexion au lancement. Plusieurs cas
-arr&ecirc;tent l'effet pour toute la session :
+**Distance haze (Animated film).** The haze grows with the distance measured
+in octaves of the near plane distance, a ratio: it starts around fifty meters
+and is at its strongest around twenty-five kilometers with the game's usual
+near plane, and it never hides a thing completely. The sky color comes from
+the image itself: each group of 8x8 pixels reads one point of a fixed 8x8 grid
+over the screen, and every pixel blends the sky points near it, those above
+weighing more. Under a black sky (space) there is no haze.
 
-- un nom introuvable ;
-- un en-t&ecirc;te du jeu absent ;
-- une variante refus&eacute;e par le compilateur du jeu ;
-- une anomalie sur le fil de rendu.
+**Slots t31 and t27.** No file of `Content/Shaders` declares `t31` or `t27`.
+The game's pass only uses `t0` to `t3`, `u0` and `s0` to `s3`, and the engine
+handles 32 slots per stage.
 
-Tous passent par le m&ecirc;me chemin (`ArretDeSession`). Le jeu garde son rendu, une
-ligne `[sir-cel-shading]` part au journal du jeu, et le joueur re&ccedil;oit une
-notification d&egrave;s qu'une partie est ouverte.
+**Cost.** Comic book: nine depth reads and a few operations per pixel.
+Clear line: the same plus one depth read and one albedo read. Animated film:
+fifteen depth reads, one albedo read, one scene color read for the sky grid
+and, for distant pixels only, a blend of 64 shared values. All of it in a pass the game runs anyway: no full-screen
+pass is added.
 
-Deux greffons ne se disputent jamais une m&ecirc;me &eacute;tape. Avant de se brancher, puis
-toutes les dix secondes, Sir Cel Shading regarde qui est accroch&eacute; &agrave;
-`MyToneMapping.Run` (`Harmony.GetPatchInfo`). S'il trouve un autre propri&eacute;taire,
-il c&egrave;de la place et le dit au joueur.
+## Stops and coexistence
 
-## Nom affich&eacute; dans Plugin Loader
+Every internal name of the engine is resolved by reflection at startup.
+Several cases stop the effect for the whole session:
 
-Plugin Loader lit le nom affich&eacute; dans la fiche du greffon, d&eacute;pos&eacute;e dans son
-d&eacute;p&ocirc;t PluginHub, et non dans ce d&eacute;p&ocirc;t. La fiche &agrave; d&eacute;poser est
-`PluginHub/sir-cel-shading.xml`, avec `FriendlyName` &agrave; &laquo; Sir Cel Shading &raquo;. Son
-champ `Commit` se remplit &agrave; la publication. `SourceDirectories` limite la
-compilation au dossier `Source`.
+- a missing name;
+- a missing game header;
+- a variant refused by the game's compiler;
+- a fault on the render thread.
 
-## Compiler et tester
+All go through the same path (`SessionStop`). The game keeps its rendering, a
+`[sir-cel-shading]` line goes to the game log, and the player gets a
+notification as soon as a game is open. `/cel status` then gives the reason,
+and the selected style.
+
+Two plugins never fight over the same step. Before hooking in, then every ten
+seconds, Sir Cel Shading looks at who is hooked on `MyToneMapping.Run`
+(`Harmony.GetPatchInfo`). If it finds another owner, it steps aside, whatever
+the style, and tells the player.
+
+## Name shown in Pulsar
+
+Pulsar reads the displayed name from the plugin's sheet in the Sirius catalog,
+not from this repository. The studio copies `PluginHub/sir-cel-shading.xml`
+there at every release, with `FriendlyName` set to "Sir Cel Shading" and the
+published commit in `Commit`. `SourceDirectories` limits the compilation to
+the `Source` folder.
+
+## Build and test
 
     dotnet build sir-cel-shading.csproj
     dotnet test tests/tests.csproj
 
-Le build cherche le jeu dans la propri&eacute;t&eacute; `Bin64`, puis dans la variable
-d'environnement `SE_BIN64`, puis dans les biblioth&egrave;ques Steam les plus
-courantes. Pour un autre emplacement, voir `Directory.Build.props.example`.
+The build looks for the game in the `Bin64` property, then in the `SE_BIN64`
+environment variable, then in the most common Steam libraries. For another
+location, see `Directory.Build.props.example`.
 
-Les tests portent sur la logique pure (`Source/Logique`) : r&eacute;glages, commande,
-arr&ecirc;t de session, cohabitation, variantes et source du shader. Ils ne demandent
-ni le jeu ni Plugin Loader.
+The tests cover the pure logic (`Source/Logic`): settings and their legacy
+import, the chat command, session stops, coexistence, shader variants and the
+shader source. They need neither the game nor Pulsar.

@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Fiche Plugin Loader de Sir Cel Shading : elle porte le nom que Plugin Loader
-  affiche dans sa liste de greffons (FriendlyName). Plugin Loader ne la lit pas
-  dans ce projet : une copie se pose dans son propre catalogue, le projet
-  PluginHub (github.com/sepluginloader/PluginHub), avec le commit a publier
-  dans Commit. SourceDirectories limite la compilation au dossier Source, sans
-  les tests.
+  Pulsar sheet of Sir Cel Shading: it carries the name Pulsar shows in its
+  plugin list (FriendlyName). Pulsar does not read it from this repository: the
+  studio copies it to the Sirius catalog at every release, with the published
+  commit in Commit. SourceDirectories limits the compilation to the Source
+  folder, without the tests.
 -->
 <PluginData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GitHubPlugin">
   <Id>RougeSable/sir-cel-shading</Id>
   <FriendlyName>Sir Cel Shading</FriendlyName>
   <Author>RougeSable</Author>
-  <Tooltip>Rendu bande dessin&#233;e : contours noirs et couleurs en aplats.</Tooltip>
-  <Description>Sir Cel Shading donne au jeu un rendu fa&#231;on bande dessin&#233;e : contours noirs autour des blocs, du d&#233;cor et des personnages, couleurs en aplats. Le joueur l'active ou le coupe &#224; son gr&#233; (r&#233;glages du greffon, ou /cel dans la discussion), sans relancer le jeu. Tout se passe sur sa machine : un joueur sans le greffon voit le rendu du jeu.</Description>
+  <Tooltip>Cel shading in three styles: Comic book, Animated film and Clear line.</Tooltip>
+  <Description>Sir Cel Shading gives the game a cel-shaded look, in the style of the player's choice. Clear line (the default): thin even outlines, bright plain colors, almost no shadows. Animated film: shadows in two or three soft tones, thin outlines in a darker shade of each object, a rim of light on silhouettes seen against the sun, and distant things fading into the sky. Comic book: black outlines and flat colors. The player picks the style and turns the effect on or off at will, in the plugin settings or with /cel in the chat (/cel comic, /cel animated, /cel clearline, /cel status), without restarting the game. Everything happens on the player's machine: a player without the plugin sees the game's own rendering.</Description>
   <Commit>0000000000000000000000000000000000000000</Commit>
   <SourceDirectories>
     <Directory>Source</Directory>

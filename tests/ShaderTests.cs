@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -7,128 +7,245 @@ namespace SirCelShading.Tests
     public class ShaderTests
     {
         [Fact]
-        public void LaProfondeurEstLieeEnT31()
+        public void DepthIsBoundInT31AndAlbedoInT27()
         {
-            Assert.Equal(31, SourceDuShader.EmplacementProfondeur);
-            Assert.Contains("register(t31)", SourceDuShader.Texte);
+            Assert.Equal(31, ShaderSource.DepthSlot);
+            Assert.Equal(27, ShaderSource.AlbedoSlot);
+            Assert.Contains("Texture2D<float> CelDepth : register(t31)", ShaderSource.Text);
+            Assert.Contains("Texture2D<float4> CelAlbedo : register(t27)", ShaderSource.Text);
         }
 
         [Fact]
-        public void AucunEmplacementDuPassageDuJeuNEstRedeclare()
+        public void NoSlotOfTheGamePassIsDeclaredAgain()
         {
-            // Le passage du jeu lie t0 à t3, u0 et s0 : notre variante n'en
-            // déclare pas d'autre que t31.
-            var emplacements = Regex.Matches(SourceDuShader.Texte, @"register\s*\(\s*(\w+)\s*\)")
-                .Cast<Match>().Select(m => m.Groups[1].Value).ToArray();
-            Assert.Equal(new[] { "t31" }, emplacements);
+            // The game's pass binds t0 to t3, u0 and s0: our variant declares
+            // no other slot than t31 and t27.
+            var slots = Regex.Matches(ShaderSource.Text, @"register\s*\(\s*(\w+)\s*\)")
+                .Cast<Match>().Select(m => m.Groups[1].Value).OrderBy(s => s).ToArray();
+            Assert.Equal(new[] { "t27", "t31" }, slots);
         }
 
         [Fact]
-        public void LesEnTetesDuJeuSontInclusEntreChevrons()
+        public void GameHeadersAreIncludedBetweenAngleBrackets()
         {
-            // Entre guillemets, le compilateur du jeu les chercherait à côté de
-            // notre fichier, dans le dossier du joueur, et échouerait.
-            foreach (var enTete in SourceDuShader.EnTetesDuJeu)
-                Assert.Contains("#include <" + enTete + ">", SourceDuShader.Texte);
-            Assert.DoesNotContain("#include \"", SourceDuShader.Texte);
+            // Between quotes, the game's compiler would look for them next to
+            // our file, in the player's folder, and fail.
+            foreach (var header in ShaderSource.GameHeaders)
+                Assert.Contains("#include <" + header + ">", ShaderSource.Text);
+            Assert.DoesNotContain("#include \"", ShaderSource.Text);
         }
 
         [Fact]
-        public void LePointDEntreeEstCeluiQueLeJeuAttend()
+        public void TheEntryPointIsTheOneTheGameExpects()
         {
-            Assert.Contains("void __compute_shader(uint3 dispatchThreadID : SV_DispatchThreadID)", SourceDuShader.Texte);
-            Assert.Contains("[numthreads(NUMTHREADS_X, NUMTHREADS_Y, 1)]", SourceDuShader.Texte);
+            Assert.Contains("void __compute_shader(uint3 dispatchThreadID : SV_DispatchThreadID)", ShaderSource.Text);
+            Assert.Contains("[numthreads(NUMTHREADS_X, NUMTHREADS_Y, 1)]", ShaderSource.Text);
         }
 
         [Fact]
-        public void LesTroisDrapeauxDuJeuSontHonores()
+        public void TheThreeGameFlagsAreHonored()
         {
-            Assert.Contains("#ifndef DISABLE_TONEMAPPING", SourceDuShader.Texte);
-            Assert.Contains("#ifdef FILL_ALPHA_LUMINANCE", SourceDuShader.Texte);
-            Assert.Contains("#ifndef DISABLE_COLOR_FILTERS", SourceDuShader.Texte);
+            Assert.Contains("#ifndef DISABLE_TONEMAPPING", ShaderSource.Text);
+            Assert.Contains("#ifdef FILL_ALPHA_LUMINANCE", ShaderSource.Text);
+            Assert.Contains("#ifndef DISABLE_COLOR_FILTERS", ShaderSource.Text);
         }
 
         [Fact]
-        public void LeFichierEstEcritEnFinsDeLigneUnix()
+        public void EachStyleHasItsOwnBranch()
         {
-            Assert.DoesNotContain("\r", SourceDuShader.Texte);
+            Assert.Contains("#define CEL_STYLE_COMIC_BOOK " + (int)CelStyle.ComicBook, ShaderSource.Text);
+            Assert.Contains("#define CEL_STYLE_ANIMATED_FILM " + (int)CelStyle.AnimatedFilm, ShaderSource.Text);
+            Assert.Contains("#define CEL_STYLE_CLEAR_LINE " + (int)CelStyle.ClearLine, ShaderSource.Text);
+            Assert.Contains("#if CEL_STYLE == CEL_STYLE_COMIC_BOOK", ShaderSource.Text);
+            Assert.Contains("#elif CEL_STYLE == CEL_STYLE_ANIMATED_FILM", ShaderSource.Text);
+        }
+
+        [Fact]
+        public void ComicBookKeepsItsOriginalRendering()
+        {
+            // The two lines of the version before the styles, macros renamed.
+            Assert.Contains("    color = CelFlatColors(color);\n    color *= 1 - CelOutline(texel) * CEL_STRENGTH;\n", ShaderSource.Text);
+            Assert.Contains("#define CEL_OUTLINE_SPAN 2\n", ShaderSource.Text);
+            Assert.Contains("return smoothstep(CEL_THRESHOLD, CEL_OUTLINE_SPAN * CEL_THRESHOLD, measure);", ShaderSource.Text);
+            Assert.Contains("#define CEL_SOFTNESS 0.06f", ShaderSource.Text);
+        }
+
+        [Fact]
+        public void TheFileIsWrittenWithUnixLineEndingsInPlainAscii()
+        {
+            Assert.DoesNotContain("\r", ShaderSource.Text);
+            Assert.True(ShaderSource.Text.All(c => c < 128));
         }
     }
 
-    public class VariantesDuShaderTests
+    public class ShaderVariantsTests
     {
         [Theory]
-        [InlineData(true, false, Variante.Normale)]
-        [InlineData(true, true, Variante.LuminanceAlpha)]
-        [InlineData(false, false, Variante.SansTonemapping)]
-        [InlineData(false, true, Variante.SansTonemapping)]
-        public void ChoisitCommeLeJeu(bool tonemapping, bool luminanceAlpha, Variante attendue)
+        [InlineData(true, false, ShaderVariant.Normal)]
+        [InlineData(true, true, ShaderVariant.AlphaLuminance)]
+        [InlineData(false, false, ShaderVariant.NoTonemapping)]
+        [InlineData(false, true, ShaderVariant.NoTonemapping)]
+        public void ChoosesLikeTheGame(bool tonemapping, bool alphaLuminance, ShaderVariant expected)
         {
-            Assert.Equal(attendue, VariantesDuShader.Choisir(tonemapping, luminanceAlpha));
+            Assert.Equal(expected, ShaderVariants.Choose(tonemapping, alphaLuminance));
         }
 
         [Fact]
-        public void LesChampsSuiventLOrdreDesVariantes()
+        public void FieldsFollowTheOrderOfTheVariants()
         {
-            Assert.Equal("m_cs", VariantesDuShader.ChampsDuJeu[(int)Variante.Normale]);
-            Assert.Equal("m_csAlphaLuminance", VariantesDuShader.ChampsDuJeu[(int)Variante.LuminanceAlpha]);
-            Assert.Equal("m_csSkip", VariantesDuShader.ChampsDuJeu[(int)Variante.SansTonemapping]);
+            Assert.Equal("m_cs", ShaderVariants.GameFields[(int)ShaderVariant.Normal]);
+            Assert.Equal("m_csAlphaLuminance", ShaderVariants.GameFields[(int)ShaderVariant.AlphaLuminance]);
+            Assert.Equal("m_csSkip", ShaderVariants.GameFields[(int)ShaderVariant.NoTonemapping]);
         }
 
         [Fact]
-        public void ChaqueVariantePorteLesMacrosDuJeu()
+        public void EachVariantCarriesTheGameMacros()
         {
-            var r = new Reglages();
+            foreach (var style in CelStyles.MenuOrder)
+            {
+                var s = new Settings { Style = style };
 
-            var normale = VariantesDuShader.Macros(Variante.Normale, r).Select(m => m.ToString()).ToArray();
-            var alpha = VariantesDuShader.Macros(Variante.LuminanceAlpha, r).Select(m => m.ToString()).ToArray();
-            var sans = VariantesDuShader.Macros(Variante.SansTonemapping, r).Select(m => m.ToString()).ToArray();
+                var normal = ShaderVariants.Macros(ShaderVariant.Normal, s).Select(m => m.ToString()).ToArray();
+                var alpha = ShaderVariants.Macros(ShaderVariant.AlphaLuminance, s).Select(m => m.ToString()).ToArray();
+                var skip = ShaderVariants.Macros(ShaderVariant.NoTonemapping, s).Select(m => m.ToString()).ToArray();
 
-            Assert.Equal("NUMTHREADS=8", normale[0]);
-            Assert.DoesNotContain("FILL_ALPHA_LUMINANCE", normale);
-            Assert.DoesNotContain("DISABLE_TONEMAPPING", normale);
-            Assert.Contains("FILL_ALPHA_LUMINANCE", alpha);
-            Assert.Contains("DISABLE_TONEMAPPING", sans);
+                Assert.Equal("NUMTHREADS=8", normal[0]);
+                Assert.DoesNotContain("FILL_ALPHA_LUMINANCE", normal);
+                Assert.DoesNotContain("DISABLE_TONEMAPPING", normal);
+                Assert.Contains("FILL_ALPHA_LUMINANCE", alpha);
+                Assert.Contains("DISABLE_TONEMAPPING", skip);
+                Assert.Contains("CEL_STYLE=" + (int)style, normal);
+            }
         }
 
         [Fact]
-        public void LesNombresSontEcritsAvecUnPointQuelleQueSoitLaLangue()
+        public void ComicBookGetsTheSameValuesAsBefore()
         {
-            var ancienne = System.Globalization.CultureInfo.CurrentCulture;
+            var macros = ShaderVariants.Macros(ShaderVariant.Normal, new Settings { Style = CelStyle.ComicBook })
+                .ToDictionary(m => m.Name, m => m.Value);
+
+            Assert.Equal("4", macros["CEL_TONES"]);
+            Assert.Equal("1", macros["CEL_WIDTH"]);
+            Assert.Equal("1.0f", macros["CEL_STRENGTH"]);
+            Assert.Equal("0.75f", macros["CEL_THRESHOLD"]);
+            Assert.Equal("1.15f", macros["CEL_SATURATION"]);
+        }
+
+        [Fact]
+        public void NumbersAreWrittenWithADotWhateverTheLanguage()
+        {
+            var previous = System.Globalization.CultureInfo.CurrentCulture;
             try
             {
                 System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("fr-FR");
-                var macros = VariantesDuShader.Macros(Variante.Normale, new Reglages { Force = 85, Vivacite = 115, Sensibilite = 3 })
-                    .ToDictionary(m => m.Nom, m => m.Valeur);
+                var settings = new Settings
+                {
+                    Style = CelStyle.ComicBook,
+                    ComicBook = new ComicBookSettings { OutlineStrength = 85, Vibrance = 115, EdgeSensitivity = 3 },
+                };
+                var macros = ShaderVariants.Macros(ShaderVariant.Normal, settings).ToDictionary(m => m.Name, m => m.Value);
 
-                Assert.Equal("0.85f", macros["CEL_FORCE"]);
+                Assert.Equal("0.85f", macros["CEL_STRENGTH"]);
                 Assert.Equal("1.15f", macros["CEL_SATURATION"]);
-                Assert.Equal("0.75f", macros["CEL_SEUIL"]);
-                Assert.Equal("1.0f", VariantesDuShader.Macros(Variante.Normale, new Reglages { Force = 100 })
-                    .Single(m => m.Nom == "CEL_FORCE").Valeur);
+                Assert.Equal("0.75f", macros["CEL_THRESHOLD"]);
+
+                settings.Style = CelStyle.AnimatedFilm;
+                settings.AnimatedFilm.Haze = 35;
+                Assert.Equal("0.35f", ShaderVariants.Macros(ShaderVariant.Normal, settings).Single(m => m.Name == "CEL_HAZE").Value);
             }
             finally
             {
-                System.Globalization.CultureInfo.CurrentCulture = ancienne;
+                System.Globalization.CultureInfo.CurrentCulture = previous;
             }
         }
 
         [Fact]
-        public void LaSensibiliteAbaisseLeSeuil()
+        public void SensitivityLowersTheThreshold()
         {
-            for (var s = Reglages.SensibiliteMin; s < Reglages.SensibiliteMax; s++)
-                Assert.True(VariantesDuShader.Seuil(s + 1) < VariantesDuShader.Seuil(s));
+            for (var s = ComicBookSettings.EdgeSensitivityMin; s < ComicBookSettings.EdgeSensitivityMax; s++)
+                Assert.True(ShaderVariants.Threshold(s + 1) < ShaderVariants.Threshold(s));
         }
 
         [Fact]
-        public void LInterrupteurNeDemandePasDeRecompiler()
+        public void TheSwitchNeedsNoRecompiling()
         {
             Assert.Equal(
-                VariantesDuShader.Signature(new Reglages { Active = true }),
-                VariantesDuShader.Signature(new Reglages { Active = false }));
-            Assert.NotEqual(
-                VariantesDuShader.Signature(new Reglages { Teintes = 4 }),
-                VariantesDuShader.Signature(new Reglages { Teintes = 5 }));
+                ShaderVariants.Signature(new Settings { Enabled = true }),
+                ShaderVariants.Signature(new Settings { Enabled = false }));
+        }
+
+        [Fact]
+        public void EachStyleCompilesItsOwnVariants()
+        {
+            var signatures = CelStyles.MenuOrder
+                .Select(style => ShaderVariants.Signature(new Settings { Style = style }))
+                .Distinct()
+                .Count();
+            Assert.Equal(3, signatures);
+        }
+
+        [Fact]
+        public void OnlyAlbedoStylesReadTheGBuffer()
+        {
+            Assert.False(ShaderVariants.NeedsAlbedo(CelStyle.ComicBook));
+            Assert.True(ShaderVariants.NeedsAlbedo(CelStyle.AnimatedFilm));
+            Assert.True(ShaderVariants.NeedsAlbedo(CelStyle.ClearLine));
+        }
+
+        // Every setting of a style pushed to its maximum, then to its minimum.
+        private static void PushEveryOtherStyle(Settings s, CelStyle kept, bool max)
+        {
+            if (kept != CelStyle.ComicBook)
+                s.ComicBook = max
+                    ? new ComicBookSettings { Tones = ComicBookSettings.TonesMax, OutlineWidth = ComicBookSettings.OutlineWidthMax, OutlineStrength = ComicBookSettings.OutlineStrengthMin, EdgeSensitivity = ComicBookSettings.EdgeSensitivityMax, Vibrance = ComicBookSettings.VibranceMax }
+                    : new ComicBookSettings { Tones = ComicBookSettings.TonesMin, OutlineWidth = ComicBookSettings.OutlineWidthMin, OutlineStrength = ComicBookSettings.OutlineStrengthMin, EdgeSensitivity = ComicBookSettings.EdgeSensitivityMin, Vibrance = ComicBookSettings.VibranceMin };
+            if (kept != CelStyle.AnimatedFilm)
+                s.AnimatedFilm = max
+                    ? new AnimatedFilmSettings { ShadeTones = AnimatedFilmSettings.ShadeTonesMax, OutlineStrength = AnimatedFilmSettings.OutlineStrengthMax, RimLight = AnimatedFilmSettings.RimLightMax, Haze = AnimatedFilmSettings.HazeMax }
+                    : new AnimatedFilmSettings { ShadeTones = AnimatedFilmSettings.ShadeTonesMin, OutlineStrength = AnimatedFilmSettings.OutlineStrengthMin, RimLight = AnimatedFilmSettings.RimLightMin, Haze = AnimatedFilmSettings.HazeMin };
+            if (kept != CelStyle.ClearLine)
+                s.ClearLine = max
+                    ? new ClearLineSettings { OutlineStrength = ClearLineSettings.OutlineStrengthMax, EdgeSensitivity = ClearLineSettings.EdgeSensitivityMax, Shadows = ClearLineSettings.ShadowsMax, Vibrance = ClearLineSettings.VibranceMax }
+                    : new ClearLineSettings { OutlineStrength = ClearLineSettings.OutlineStrengthMin, EdgeSensitivity = ClearLineSettings.EdgeSensitivityMin, Shadows = ClearLineSettings.ShadowsMin, Vibrance = ClearLineSettings.VibranceMin };
+        }
+
+        [Theory]
+        [InlineData(CelStyle.ComicBook)]
+        [InlineData(CelStyle.AnimatedFilm)]
+        [InlineData(CelStyle.ClearLine)]
+        public void TheSettingsOfOneStyleNeverChangeAnother(CelStyle style)
+        {
+            var reference = new Settings { Style = style };
+            var pushedUp = new Settings { Style = style };
+            var pushedDown = new Settings { Style = style };
+            PushEveryOtherStyle(pushedUp, style, true);
+            PushEveryOtherStyle(pushedDown, style, false);
+
+            foreach (var variant in new[] { ShaderVariant.Normal, ShaderVariant.AlphaLuminance, ShaderVariant.NoTonemapping })
+            {
+                var expected = ShaderVariants.Macros(variant, reference).Select(m => m.ToString()).ToArray();
+                Assert.Equal(expected, ShaderVariants.Macros(variant, pushedUp).Select(m => m.ToString()).ToArray());
+                Assert.Equal(expected, ShaderVariants.Macros(variant, pushedDown).Select(m => m.ToString()).ToArray());
+            }
+            Assert.Equal(ShaderVariants.Signature(reference), ShaderVariants.Signature(pushedUp));
+            Assert.Equal(ShaderVariants.Signature(reference), ShaderVariants.Signature(pushedDown));
+        }
+
+        [Theory]
+        [InlineData(CelStyle.ComicBook)]
+        [InlineData(CelStyle.AnimatedFilm)]
+        [InlineData(CelStyle.ClearLine)]
+        public void TheSettingsOfTheSelectedStyleDoChangeIt(CelStyle style)
+        {
+            var reference = new Settings { Style = style };
+            var changed = new Settings { Style = style };
+            PushEveryOtherStyle(changed, CelStyle.ComicBook, true);
+            PushEveryOtherStyle(changed, CelStyle.AnimatedFilm, true);
+            PushEveryOtherStyle(changed, CelStyle.ClearLine, true);
+            // PushEveryOtherStyle leaves the kept style alone; three passes with
+            // a different kept style push all three.
+
+            Assert.NotEqual(ShaderVariants.Signature(reference), ShaderVariants.Signature(changed));
         }
     }
 }
