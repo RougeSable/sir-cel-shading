@@ -10,9 +10,9 @@ namespace SirCelShading
     {
         public const string FileName = "settings.xml";
 
-        // The file written by versions before the choice of style. It is read
-        // once, when settings.xml does not exist yet, so that the Comic book
-        // settings and the on/off switch of an existing player are kept.
+        // The file written by the first version. It is read once, when
+        // settings.xml does not exist yet, so that the on/off switch of an
+        // existing player is kept.
         public const string LegacyFileName = "reglages.xml";
 
         private static readonly XmlSerializer Serializer = new XmlSerializer(typeof(Settings));
@@ -23,6 +23,9 @@ namespace SirCelShading
             return Path.Combine(directory, FileName);
         }
 
+        // Whatever an earlier version wrote (a style, the settings of other
+        // styles), the result is the Animated film rendering: elements this
+        // version does not know are ignored.
         public static Settings Load(string directory, out string problem)
         {
             problem = null;
@@ -74,49 +77,6 @@ namespace SirCelShading
             if (File.Exists(path))
                 File.Delete(path);
             File.Move(temporary, path);
-        }
-    }
-
-    // The settings file of versions before the choice of style, element names
-    // included: they are the names that file really contains. It never held a
-    // style, so an imported player gets the default style, like a new player.
-    [XmlRoot("Reglages")]
-    public class LegacySettings
-    {
-        [XmlElement("Active")]
-        public bool Enabled { get; set; } = true;
-
-        [XmlElement("Teintes")]
-        public int Tones { get; set; } = ComicBookSettings.TonesDefault;
-
-        [XmlElement("Epaisseur")]
-        public int OutlineWidth { get; set; } = ComicBookSettings.OutlineWidthDefault;
-
-        [XmlElement("Force")]
-        public int OutlineStrength { get; set; } = ComicBookSettings.OutlineStrengthDefault;
-
-        [XmlElement("Sensibilite")]
-        public int EdgeSensitivity { get; set; } = ComicBookSettings.EdgeSensitivityDefault;
-
-        [XmlElement("Vivacite")]
-        public int Vibrance { get; set; } = ComicBookSettings.VibranceDefault;
-
-        public Settings ToSettings()
-        {
-            var settings = new Settings
-            {
-                Enabled = Enabled,
-                Style = CelStyles.Default,
-                ComicBook = new ComicBookSettings
-                {
-                    Tones = Tones,
-                    OutlineWidth = OutlineWidth,
-                    OutlineStrength = OutlineStrength,
-                    EdgeSensitivity = EdgeSensitivity,
-                    Vibrance = Vibrance,
-                },
-            };
-            return settings.Normalized();
         }
     }
 }

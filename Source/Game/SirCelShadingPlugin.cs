@@ -11,7 +11,7 @@ using VRageRender;
 namespace SirCelShading
 {
     // Sir Cel Shading, a client-side plugin loaded by Pulsar. It only does cel
-    // shading, in three styles, on the player's machine: nothing goes through
+    // shading, in the Animated film style, on the player's machine: nothing goes through
     // the server, a player without the plugin sees the game's rendering.
     public class SirCelShadingPlugin : IPlugin
     {
@@ -61,7 +61,7 @@ namespace SirCelShading
                 Log(problem + "; using the defaults");
 
             var settings = FinalColorsPass.CurrentSettings;
-            Log("loaded, " + Texts.StyleName(settings.Style) + " style, " + (settings.Enabled ? "on" : "off"));
+            Log("loaded, Animated film, " + (settings.Enabled ? "on" : "off"));
 
             try
             {
@@ -129,7 +129,7 @@ namespace SirCelShading
         }
 
         // True if another plugin is hooked on the final colors: the effect then
-        // stops for the session, whatever the style, and our patch, if placed,
+        // stops for the session, and our patch, if placed,
         // stays inert (removing it while the render thread runs it could leave
         // a game field replaced).
         private bool StepAsideIfTaken()
@@ -197,7 +197,7 @@ namespace SirCelShading
             if (CelCommand.Apply(action, settings))
                 Apply(settings);
 
-            m_stop.Inform(Texts.Status(settings.Enabled, settings.Style, m_stop.Reason));
+            m_stop.Inform(Texts.Status(settings.Enabled, m_stop.Reason));
         }
 
         // Taken into account at once, without restarting the game: the next

@@ -9,10 +9,9 @@ namespace SirCelShading
     // The prefix, postfix and finalizer placed on MyToneMapping.Run, the
     // game's final colors pass (method proven on #208).
     //
-    // Enabled: the prefix puts our variant for the selected style in the
-    // static field of the current variant, and binds the scene depth in t31
-    // (plus the albedo in t27 for Animated film and Clear line); the postfix
-    // gives the field back its game shader and unbinds them. Disabled, or
+    // Enabled: the prefix puts our variant in the static field of the current
+    // variant, and binds the scene depth in t31 and the albedo in t27; the
+    // postfix gives the field back its game shader and unbinds them. Disabled, or
     // stopped: nothing is touched, the game draws with its own shaders.
     //
     // Everything below runs on the render thread, and only there.
@@ -64,9 +63,9 @@ namespace SirCelShading
                 if (stage == null || depth == null)
                     return; // GBuffer not ready yet: this frame stays the game's
 
-                // Null with multisampling: the style then keeps the game's
+                // Null with multisampling: the effect then keeps the game's
                 // lighting, the rest of it still applies.
-                var albedo = ShaderVariants.NeedsAlbedo(settings.Style) ? Engine.AlbedoTexture() : null;
+                var albedo = Engine.AlbedoTexture();
 
                 var variant = ShaderVariants.Choose(
                     (bool)__args[Engine.EnableTonemappingIndex],

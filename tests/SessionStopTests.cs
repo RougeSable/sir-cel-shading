@@ -60,7 +60,7 @@ namespace SirCelShading.Tests
         public void APlainMessageStopsNothing()
         {
             var stop = new SessionStop(null);
-            var message = Texts.Status(true, CelStyle.ClearLine, null);
+            var message = Texts.Status(true, null);
             stop.Inform(message);
 
             Assert.False(stop.IsStopped);
@@ -70,19 +70,15 @@ namespace SirCelShading.Tests
         }
 
         [Fact]
-        public void SteppingAsideTellsThePlayerWhateverTheStyle()
+        public void SteppingAsideTellsThePlayer()
         {
             var stop = new SessionStop(null);
             stop.Stop("patched by other.plugin", string.Format(Texts.StopCoexistence, "other.plugin"));
 
-            foreach (var style in CelStyles.MenuOrder)
-            {
-                var status = Texts.Status(true, style, stop.Reason);
-                Assert.StartsWith(Texts.StopPrefix, status);
-                Assert.Contains("other.plugin", status);
-                Assert.Contains("steps aside", status);
-                Assert.Contains(Texts.StyleName(style), status);
-            }
+            var status = Texts.Status(true, stop.Reason);
+            Assert.StartsWith(Texts.StopPrefix, status);
+            Assert.Contains("other.plugin", status);
+            Assert.Contains("steps aside", status);
         }
     }
 }

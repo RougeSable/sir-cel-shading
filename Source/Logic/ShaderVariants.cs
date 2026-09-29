@@ -38,9 +38,9 @@ namespace SirCelShading
 
         public const int VariantCount = 3;
 
-        // Edge sensitivity used by the Animated film outlines, which have no
-        // setting of their own for it.
-        public const int AnimatedFilmEdgeSensitivity = 3;
+        // Relative curvature threshold of the outlines: they have no setting
+        // of their own for it.
+        public const float EdgeThreshold = 0.75f;
 
         // What MyToneMapping.Run picks, reproduced exactly:
         // (!enableTonemapping) ? m_csSkip : (needsAlphaLuminance ? m_csAlphaLuminance : m_cs)
@@ -51,28 +51,9 @@ namespace SirCelShading
             return needsAlphaLuminance ? ShaderVariant.AlphaLuminance : ShaderVariant.Normal;
         }
 
-        // Relative curvature threshold, per sensitivity level (1 to 5).
-        private static readonly float[] Thresholds = { 1.6f, 1.1f, 0.75f, 0.5f, 0.33f };
-
-        public static float Threshold(int sensitivity)
-        {
-            var i = Settings.Clamp(sensitivity, ComicBookSettings.EdgeSensitivityMin, ComicBookSettings.EdgeSensitivityMax)
-                - ComicBookSettings.EdgeSensitivityMin;
-            return Thresholds[i];
-        }
-
-        // Animated film and Clear line split the game's lighting from the
-        // colors of the objects: they read the albedo of the scene.
-        public static bool NeedsAlbedo(CelStyle style)
-        {
-            return style == CelStyle.AnimatedFilm || style == CelStyle.ClearLine;
-        }
-
-        // Only the settings of the selected style reach the shader: a setting
-        // of another style cannot change this one.
         public static List<MacroDefinition> Macros(ShaderVariant variant, Settings settings)
         {
-            var s = settings.Normalized();
+            var a = settings.Normalized().AnimatedFilm;
             var macros = new List<MacroDefinition>
             {
                 // Same macros as the game for the same variant (MyToneMapping.Init).
@@ -84,56 +65,16 @@ namespace SirCelShading
             else if (variant == ShaderVariant.NoTonemapping)
                 macros.Add(new MacroDefinition("DISABLE_TONEMAPPING", null));
 
-            macros.Add(new MacroDefinition("CEL_STYLE", Integer((int)s.Style)));
-            macros.AddRange(StyleMacros(s));
+            macros.Add(new MacroDefinition("CEL_SHADE_TONES", Integer(a.ShadeTones)));
+            macros.Add(new MacroDefinition("CEL_STRENGTH", Float(a.OutlineStrength / 100f)));
+            macros.Add(new MacroDefinition("CEL_THRESHOLD", Float(EdgeThreshold)));
+            macros.Add(new MacroDefinition("CEL_RIM", Float(a.RimLight / 100f)));
+            macros.Add(new MacroDefinition("CEL_HAZE", Float(a.Haze / 100f)));
             return macros;
         }
 
-        private static IEnumerable<MacroDefinition> StyleMacros(Settings s)
-        {
-            switch (s.Style)
-            {
-                case CelStyle.ComicBook:
-                {
-                    var c = s.ComicBook;
-                    return new[]
-                    {
-                        new MacroDefinition("CEL_TONES", Integer(c.Tones)),
-                        new MacroDefinition("CEL_WIDTH", Integer(c.OutlineWidth)),
-                        new MacroDefinition("CEL_STRENGTH", Float(c.OutlineStrength / 100f)),
-                        new MacroDefinition("CEL_THRESHOLD", Float(Threshold(c.EdgeSensitivity))),
-                        new MacroDefinition("CEL_SATURATION", Float(c.Vibrance / 100f)),
-                    };
-                }
-                case CelStyle.AnimatedFilm:
-                {
-                    var a = s.AnimatedFilm;
-                    return new[]
-                    {
-                        new MacroDefinition("CEL_SHADE_TONES", Integer(a.ShadeTones)),
-                        new MacroDefinition("CEL_STRENGTH", Float(a.OutlineStrength / 100f)),
-                        new MacroDefinition("CEL_THRESHOLD", Float(Threshold(AnimatedFilmEdgeSensitivity))),
-                        new MacroDefinition("CEL_RIM", Float(a.RimLight / 100f)),
-                        new MacroDefinition("CEL_HAZE", Float(a.Haze / 100f)),
-                    };
-                }
-                default:
-                {
-                    var l = s.ClearLine;
-                    return new[]
-                    {
-                        new MacroDefinition("CEL_STRENGTH", Float(l.OutlineStrength / 100f)),
-                        new MacroDefinition("CEL_THRESHOLD", Float(Threshold(l.EdgeSensitivity))),
-                        new MacroDefinition("CEL_SHADOWS", Float(l.Shadows / 100f)),
-                        new MacroDefinition("CEL_SATURATION", Float(l.Vibrance / 100f)),
-                    };
-                }
-            }
-        }
-
         // Two settings with the same signature give the same variants: no need
-        // to compile again. The on/off switch is not part of it, and neither
-        // are the settings of the styles not in use.
+        // to compile again. The on/off switch is not part of it.
         public static string Signature(Settings settings)
         {
             var parts = new List<string>();

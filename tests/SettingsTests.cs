@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Xunit;
 
 namespace SirCelShading.Tests
@@ -23,20 +24,22 @@ namespace SirCelShading.Tests
         }
 
         [Fact]
-        public void OnFromInstallationInClearLine()
+        public void OnFromInstallation()
         {
             var s = new Settings();
             Assert.True(s.Enabled);
-            Assert.Equal(CelStyle.ClearLine, s.Style);
-            Assert.Equal(CelStyle.ClearLine, CelStyles.Default);
+            Assert.Equal(AnimatedFilmSettings.ShadeTonesDefault, s.AnimatedFilm.ShadeTones);
+            Assert.Equal(AnimatedFilmSettings.OutlineStrengthDefault, s.AnimatedFilm.OutlineStrength);
+            Assert.Equal(AnimatedFilmSettings.RimLightDefault, s.AnimatedFilm.RimLight);
+            Assert.Equal(AnimatedFilmSettings.HazeDefault, s.AnimatedFilm.Haze);
         }
 
         [Fact]
-        public void TheMenuListsTheThreeStylesInOrder()
+        public void TheSettingsHoldNoStyleChoice()
         {
-            Assert.Equal(new[] { CelStyle.ComicBook, CelStyle.AnimatedFilm, CelStyle.ClearLine }, CelStyles.MenuOrder);
-            Assert.Equal(new[] { "Comic book", "Animated film", "Clear line" },
-                Array.ConvertAll(CelStyles.MenuOrder, Texts.StyleName));
+            var names = typeof(Settings).GetProperties().Select(p => p.Name).OrderBy(n => n).ToArray();
+            Assert.Equal(new[] { "AnimatedFilm", "Enabled" }, names);
+            Assert.Null(typeof(Settings).Assembly.GetType("SirCelShading.CelStyle"));
         }
 
         [Fact]
@@ -44,26 +47,13 @@ namespace SirCelShading.Tests
         {
             var s = new Settings
             {
-                Style = (CelStyle)42,
-                ComicBook = new ComicBookSettings { Tones = 99, OutlineWidth = 0, OutlineStrength = -5, EdgeSensitivity = 42, Vibrance = 10 },
                 AnimatedFilm = new AnimatedFilmSettings { ShadeTones = 9, OutlineStrength = 300, RimLight = -1, Haze = 101 },
-                ClearLine = new ClearLineSettings { OutlineStrength = -3, EdgeSensitivity = 0, Shadows = 90, Vibrance = 500 },
             }.Normalized();
 
-            Assert.Equal(CelStyles.Default, s.Style);
-            Assert.Equal(ComicBookSettings.TonesMax, s.ComicBook.Tones);
-            Assert.Equal(ComicBookSettings.OutlineWidthMin, s.ComicBook.OutlineWidth);
-            Assert.Equal(ComicBookSettings.OutlineStrengthMin, s.ComicBook.OutlineStrength);
-            Assert.Equal(ComicBookSettings.EdgeSensitivityMax, s.ComicBook.EdgeSensitivity);
-            Assert.Equal(ComicBookSettings.VibranceMin, s.ComicBook.Vibrance);
             Assert.Equal(AnimatedFilmSettings.ShadeTonesMax, s.AnimatedFilm.ShadeTones);
             Assert.Equal(AnimatedFilmSettings.OutlineStrengthMax, s.AnimatedFilm.OutlineStrength);
             Assert.Equal(AnimatedFilmSettings.RimLightMin, s.AnimatedFilm.RimLight);
             Assert.Equal(AnimatedFilmSettings.HazeMax, s.AnimatedFilm.Haze);
-            Assert.Equal(ClearLineSettings.OutlineStrengthMin, s.ClearLine.OutlineStrength);
-            Assert.Equal(ClearLineSettings.EdgeSensitivityMin, s.ClearLine.EdgeSensitivity);
-            Assert.Equal(ClearLineSettings.ShadowsMax, s.ClearLine.Shadows);
-            Assert.Equal(ClearLineSettings.VibranceMax, s.ClearLine.Vibrance);
         }
 
         [Fact]
@@ -72,10 +62,8 @@ namespace SirCelShading.Tests
             var original = new Settings();
             var copy = original.Copy();
             copy.AnimatedFilm.Haze = 0;
-            copy.ComicBook.Tones = 7;
 
             Assert.Equal(AnimatedFilmSettings.HazeDefault, original.AnimatedFilm.Haze);
-            Assert.Equal(ComicBookSettings.TonesDefault, original.ComicBook.Tones);
         }
 
         [Fact]
@@ -86,57 +74,87 @@ namespace SirCelShading.Tests
 
             Assert.Null(problem);
             Assert.True(s.Enabled);
-            Assert.Equal(CelStyle.ClearLine, s.Style);
-            Assert.Equal(ComicBookSettings.TonesDefault, s.ComicBook.Tones);
+            Assert.Equal(AnimatedFilmSettings.HazeDefault, s.AnimatedFilm.Haze);
         }
 
         [Fact]
-        public void AnExistingPlayerWhoNeverPickedAStyleGetsClearLineAndKeepsTheComicBookSettings()
+        public void APlayerOfTheFirstVersionKeepsTheSwitch()
         {
-            // The file of the version before the choice of style, as it wrote it.
+            // The file of the first version, as it wrote it.
             Write(SettingsFile.LegacyFileName,
                 "<?xml version=\"1.0\"?>\n<Reglages xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n"
-                + "  <Active>true</Active>\n  <Teintes>6</Teintes>\n  <Epaisseur>2</Epaisseur>\n  <Force>70</Force>\n"
+                + "  <Active>false</Active>\n  <Teintes>6</Teintes>\n  <Epaisseur>2</Epaisseur>\n  <Force>70</Force>\n"
                 + "  <Sensibilite>4</Sensibilite>\n  <Vivacite>130</Vivacite>\n</Reglages>");
 
             string problem;
             var s = SettingsFile.Load(m_directory, out problem);
 
             Assert.Null(problem);
-            Assert.True(s.Enabled);
-            Assert.Equal(CelStyle.ClearLine, s.Style);
-            Assert.Equal(6, s.ComicBook.Tones);
-            Assert.Equal(2, s.ComicBook.OutlineWidth);
-            Assert.Equal(70, s.ComicBook.OutlineStrength);
-            Assert.Equal(4, s.ComicBook.EdgeSensitivity);
-            Assert.Equal(130, s.ComicBook.Vibrance);
+            Assert.False(s.Enabled);
+            Assert.Equal(AnimatedFilmSettings.ShadeTonesDefault, s.AnimatedFilm.ShadeTones);
+        }
+
+        [Theory]
+        [InlineData("ComicBook")]
+        [InlineData("ClearLine")]
+        [InlineData("AnimatedFilm")]
+        [InlineData("Watercolor")]
+        [InlineData("")]
+        public void AFileThatHeldAStyleLoadsWithoutErrorAndKeepsTheSwitchAndTheAnimatedFilmSettings(string stored)
+        {
+            // What the previous version wrote: a style, and one group per style.
+            Write(SettingsFile.FileName,
+                "<?xml version=\"1.0\"?>\n<Settings xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n"
+                + "  <Enabled>false</Enabled>\n  <Style>" + stored + "</Style>\n"
+                + "  <ComicBook><Tones>6</Tones><OutlineWidth>2</OutlineWidth><OutlineStrength>70</OutlineStrength><EdgeSensitivity>4</EdgeSensitivity><Vibrance>130</Vibrance></ComicBook>\n"
+                + "  <AnimatedFilm><ShadeTones>2</ShadeTones><OutlineStrength>40</OutlineStrength><RimLight>90</RimLight><Haze>20</Haze></AnimatedFilm>\n"
+                + "  <ClearLine><OutlineStrength>80</OutlineStrength><EdgeSensitivity>2</EdgeSensitivity><Shadows>30</Shadows><Vibrance>150</Vibrance></ClearLine>\n"
+                + "</Settings>");
+
+            string problem;
+            var s = SettingsFile.Load(m_directory, out problem);
+
+            Assert.Null(problem);
+            Assert.False(s.Enabled);
+            Assert.Equal(2, s.AnimatedFilm.ShadeTones);
+            Assert.Equal(40, s.AnimatedFilm.OutlineStrength);
+            Assert.Equal(90, s.AnimatedFilm.RimLight);
+            Assert.Equal(20, s.AnimatedFilm.Haze);
         }
 
         [Fact]
-        public void TheNewFileWinsOverTheLegacyOne()
+        public void AFileWithoutAStyleLoadsWithoutError()
         {
-            Write(SettingsFile.LegacyFileName, "<?xml version=\"1.0\"?><Reglages><Active>false</Active><Teintes>6</Teintes></Reglages>");
-            SettingsFile.Save(m_directory, new Settings { Style = CelStyle.AnimatedFilm });
+            Write(SettingsFile.FileName, "<?xml version=\"1.0\"?><Settings><Enabled>true</Enabled></Settings>");
 
             string problem;
             var s = SettingsFile.Load(m_directory, out problem);
 
             Assert.Null(problem);
             Assert.True(s.Enabled);
-            Assert.Equal(CelStyle.AnimatedFilm, s.Style);
-            Assert.Equal(ComicBookSettings.TonesDefault, s.ComicBook.Tones);
+            Assert.Equal(AnimatedFilmSettings.HazeDefault, s.AnimatedFilm.Haze);
         }
 
         [Fact]
-        public void TheChosenStyleAndEverySettingSurviveARoundTrip()
+        public void TheNewFileWinsOverTheLegacyOne()
+        {
+            Write(SettingsFile.LegacyFileName, "<?xml version=\"1.0\"?><Reglages><Active>false</Active></Reglages>");
+            SettingsFile.Save(m_directory, new Settings());
+
+            string problem;
+            var s = SettingsFile.Load(m_directory, out problem);
+
+            Assert.Null(problem);
+            Assert.True(s.Enabled);
+        }
+
+        [Fact]
+        public void TheSwitchAndEverySettingSurviveARoundTrip()
         {
             var saved = new Settings
             {
                 Enabled = false,
-                Style = CelStyle.AnimatedFilm,
-                ComicBook = new ComicBookSettings { Tones = 6, OutlineWidth = 2, OutlineStrength = 70, EdgeSensitivity = 4, Vibrance = 130 },
                 AnimatedFilm = new AnimatedFilmSettings { ShadeTones = 2, OutlineStrength = 40, RimLight = 90, Haze = 20 },
-                ClearLine = new ClearLineSettings { OutlineStrength = 80, EdgeSensitivity = 2, Shadows = 30, Vibrance = 150 },
             };
             SettingsFile.Save(Path.Combine(m_directory, "sub-folder"), saved);
 
@@ -145,52 +163,22 @@ namespace SirCelShading.Tests
 
             Assert.Null(problem);
             Assert.False(s.Enabled);
-            Assert.Equal(CelStyle.AnimatedFilm, s.Style);
-            Assert.Equal(6, s.ComicBook.Tones);
-            Assert.Equal(2, s.ComicBook.OutlineWidth);
-            Assert.Equal(70, s.ComicBook.OutlineStrength);
-            Assert.Equal(4, s.ComicBook.EdgeSensitivity);
-            Assert.Equal(130, s.ComicBook.Vibrance);
             Assert.Equal(2, s.AnimatedFilm.ShadeTones);
             Assert.Equal(40, s.AnimatedFilm.OutlineStrength);
             Assert.Equal(90, s.AnimatedFilm.RimLight);
             Assert.Equal(20, s.AnimatedFilm.Haze);
-            Assert.Equal(80, s.ClearLine.OutlineStrength);
-            Assert.Equal(2, s.ClearLine.EdgeSensitivity);
-            Assert.Equal(30, s.ClearLine.Shadows);
-            Assert.Equal(150, s.ClearLine.Vibrance);
             Assert.False(File.Exists(SettingsFile.PathIn(Path.Combine(m_directory, "sub-folder")) + ".tmp"));
         }
 
-        [Theory]
-        [InlineData("ComicBook", CelStyle.ComicBook)]
-        [InlineData("AnimatedFilm", CelStyle.AnimatedFilm)]
-        [InlineData("ClearLine", CelStyle.ClearLine)]
-        [InlineData("animatedfilm", CelStyle.AnimatedFilm)]
-        [InlineData("Watercolor", CelStyle.ClearLine)]
-        [InlineData("", CelStyle.ClearLine)]
-        public void TheStyleIsStoredByName(string stored, CelStyle expected)
-        {
-            Write(SettingsFile.FileName, "<?xml version=\"1.0\"?><Settings><Enabled>true</Enabled><Style>" + stored + "</Style></Settings>");
-
-            string problem;
-            var s = SettingsFile.Load(m_directory, out problem);
-
-            Assert.Null(problem);
-            Assert.Equal(expected, s.Style);
-        }
-
         [Fact]
-        public void AFileWithoutAStyleGivesClearLine()
+        public void TheSavedFileHoldsNoStyle()
         {
-            Write(SettingsFile.FileName, "<?xml version=\"1.0\"?><Settings><Enabled>true</Enabled></Settings>");
+            SettingsFile.Save(m_directory, new Settings());
 
-            string problem;
-            var s = SettingsFile.Load(m_directory, out problem);
-
-            Assert.Null(problem);
-            Assert.Equal(CelStyle.ClearLine, s.Style);
-            Assert.Equal(ClearLineSettings.ShadowsDefault, s.ClearLine.Shadows);
+            var text = File.ReadAllText(SettingsFile.PathIn(m_directory));
+            Assert.DoesNotContain("Style", text);
+            Assert.DoesNotContain("ComicBook", text);
+            Assert.DoesNotContain("ClearLine", text);
         }
 
         [Fact]
@@ -203,20 +191,19 @@ namespace SirCelShading.Tests
 
             Assert.NotNull(problem);
             Assert.True(s.Enabled);
-            Assert.Equal(CelStyle.ClearLine, s.Style);
         }
 
         [Fact]
         public void AFileEditedByHandIsBroughtBack()
         {
-            Write(SettingsFile.FileName, "<?xml version=\"1.0\"?><Settings><Enabled>true</Enabled><ComicBook><Tones>500</Tones></ComicBook></Settings>");
+            Write(SettingsFile.FileName, "<?xml version=\"1.0\"?><Settings><Enabled>true</Enabled><AnimatedFilm><Haze>500</Haze></AnimatedFilm></Settings>");
 
             string problem;
             var s = SettingsFile.Load(m_directory, out problem);
 
             Assert.Null(problem);
-            Assert.Equal(ComicBookSettings.TonesMax, s.ComicBook.Tones);
-            Assert.Equal(ComicBookSettings.VibranceDefault, s.ComicBook.Vibrance);
+            Assert.Equal(AnimatedFilmSettings.HazeMax, s.AnimatedFilm.Haze);
+            Assert.Equal(AnimatedFilmSettings.RimLightDefault, s.AnimatedFilm.RimLight);
         }
     }
 }

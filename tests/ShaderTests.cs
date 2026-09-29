@@ -51,23 +51,38 @@ namespace SirCelShading.Tests
         }
 
         [Fact]
-        public void EachStyleHasItsOwnBranch()
+        public void OnlyTheAnimatedFilmRenderingIsInTheShader()
         {
-            Assert.Contains("#define CEL_STYLE_COMIC_BOOK " + (int)CelStyle.ComicBook, ShaderSource.Text);
-            Assert.Contains("#define CEL_STYLE_ANIMATED_FILM " + (int)CelStyle.AnimatedFilm, ShaderSource.Text);
-            Assert.Contains("#define CEL_STYLE_CLEAR_LINE " + (int)CelStyle.ClearLine, ShaderSource.Text);
-            Assert.Contains("#if CEL_STYLE == CEL_STYLE_COMIC_BOOK", ShaderSource.Text);
-            Assert.Contains("#elif CEL_STYLE == CEL_STYLE_ANIMATED_FILM", ShaderSource.Text);
+            Assert.DoesNotContain("CEL_STYLE", ShaderSource.Text);
+            Assert.DoesNotContain("CelFlatColors", ShaderSource.Text);
+            Assert.DoesNotContain("CEL_SHADOWS", ShaderSource.Text);
+            Assert.DoesNotContain("CEL_SATURATION", ShaderSource.Text);
+            Assert.DoesNotContain("Comic", ShaderSource.Text);
+            Assert.DoesNotContain("Clear line", ShaderSource.Text);
         }
 
         [Fact]
-        public void ComicBookKeepsItsOriginalRendering()
+        public void TheAnimatedFilmRenderingKeepsItsParts()
         {
-            // The two lines of the version before the styles, macros renamed.
-            Assert.Contains("    color = CelFlatColors(color);\n    color *= 1 - CelOutline(texel) * CEL_STRENGTH;\n", ShaderSource.Text);
+            // Soft shadow tones, darker outlines, rim light, distance haze.
+            Assert.Contains("CelRelight(color, albedo, lighting, CelShadeBands(lighting))", ShaderSource.Text);
+            Assert.Contains("color = lerp(color, CelInk(color), CelOutline(texel) * CEL_STRENGTH);", ShaderSource.Text);
+            Assert.Contains("color = CelRimLight(color, p, last, dist, uv);", ShaderSource.Text);
+            Assert.Contains("color = lerp(color, sky.rgb, haze);", ShaderSource.Text);
             Assert.Contains("#define CEL_OUTLINE_SPAN 2\n", ShaderSource.Text);
             Assert.Contains("return smoothstep(CEL_THRESHOLD, CEL_OUTLINE_SPAN * CEL_THRESHOLD, measure);", ShaderSource.Text);
-            Assert.Contains("#define CEL_SOFTNESS 0.06f", ShaderSource.Text);
+            Assert.Contains("#define CEL_BAND_SOFTNESS 0.2f", ShaderSource.Text);
+            Assert.Contains("#define CEL_SHADOW_FLOOR 0.45f", ShaderSource.Text);
+            Assert.Contains("#define CEL_ANIMATED_SATURATION 1.1f", ShaderSource.Text);
+            Assert.Contains("return color * color * 0.4f;", ShaderSource.Text);
+        }
+
+        [Fact]
+        public void EveryPreprocessorBlockIsClosed()
+        {
+            var opened = Regex.Matches(ShaderSource.Text, @"^\s*#\s*if(n?def)?\b", RegexOptions.Multiline).Count;
+            var closed = Regex.Matches(ShaderSource.Text, @"^\s*#\s*endif\b", RegexOptions.Multiline).Count;
+            Assert.Equal(opened, closed);
         }
 
         [Fact]
@@ -101,34 +116,31 @@ namespace SirCelShading.Tests
         [Fact]
         public void EachVariantCarriesTheGameMacros()
         {
-            foreach (var style in CelStyles.MenuOrder)
-            {
-                var s = new Settings { Style = style };
+            var s = new Settings();
 
-                var normal = ShaderVariants.Macros(ShaderVariant.Normal, s).Select(m => m.ToString()).ToArray();
-                var alpha = ShaderVariants.Macros(ShaderVariant.AlphaLuminance, s).Select(m => m.ToString()).ToArray();
-                var skip = ShaderVariants.Macros(ShaderVariant.NoTonemapping, s).Select(m => m.ToString()).ToArray();
+            var normal = ShaderVariants.Macros(ShaderVariant.Normal, s).Select(m => m.ToString()).ToArray();
+            var alpha = ShaderVariants.Macros(ShaderVariant.AlphaLuminance, s).Select(m => m.ToString()).ToArray();
+            var skip = ShaderVariants.Macros(ShaderVariant.NoTonemapping, s).Select(m => m.ToString()).ToArray();
 
-                Assert.Equal("NUMTHREADS=8", normal[0]);
-                Assert.DoesNotContain("FILL_ALPHA_LUMINANCE", normal);
-                Assert.DoesNotContain("DISABLE_TONEMAPPING", normal);
-                Assert.Contains("FILL_ALPHA_LUMINANCE", alpha);
-                Assert.Contains("DISABLE_TONEMAPPING", skip);
-                Assert.Contains("CEL_STYLE=" + (int)style, normal);
-            }
+            Assert.Equal("NUMTHREADS=8", normal[0]);
+            Assert.DoesNotContain("FILL_ALPHA_LUMINANCE", normal);
+            Assert.DoesNotContain("DISABLE_TONEMAPPING", normal);
+            Assert.Contains("FILL_ALPHA_LUMINANCE", alpha);
+            Assert.Contains("DISABLE_TONEMAPPING", skip);
         }
 
         [Fact]
-        public void ComicBookGetsTheSameValuesAsBefore()
+        public void TheDefaultsGiveTheAcceptedValues()
         {
-            var macros = ShaderVariants.Macros(ShaderVariant.Normal, new Settings { Style = CelStyle.ComicBook })
+            var macros = ShaderVariants.Macros(ShaderVariant.Normal, new Settings())
                 .ToDictionary(m => m.Name, m => m.Value);
 
-            Assert.Equal("4", macros["CEL_TONES"]);
-            Assert.Equal("1", macros["CEL_WIDTH"]);
-            Assert.Equal("1.0f", macros["CEL_STRENGTH"]);
+            Assert.Equal("3", macros["CEL_SHADE_TONES"]);
+            Assert.Equal("0.7f", macros["CEL_STRENGTH"]);
             Assert.Equal("0.75f", macros["CEL_THRESHOLD"]);
-            Assert.Equal("1.15f", macros["CEL_SATURATION"]);
+            Assert.Equal("0.6f", macros["CEL_RIM"]);
+            Assert.Equal("0.6f", macros["CEL_HAZE"]);
+            Assert.Equal(5, macros.Count - 1); // the five macros of the rendering, plus NUMTHREADS
         }
 
         [Fact]
@@ -140,30 +152,18 @@ namespace SirCelShading.Tests
                 System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("fr-FR");
                 var settings = new Settings
                 {
-                    Style = CelStyle.ComicBook,
-                    ComicBook = new ComicBookSettings { OutlineStrength = 85, Vibrance = 115, EdgeSensitivity = 3 },
+                    AnimatedFilm = new AnimatedFilmSettings { OutlineStrength = 85, Haze = 35 },
                 };
                 var macros = ShaderVariants.Macros(ShaderVariant.Normal, settings).ToDictionary(m => m.Name, m => m.Value);
 
                 Assert.Equal("0.85f", macros["CEL_STRENGTH"]);
-                Assert.Equal("1.15f", macros["CEL_SATURATION"]);
+                Assert.Equal("0.35f", macros["CEL_HAZE"]);
                 Assert.Equal("0.75f", macros["CEL_THRESHOLD"]);
-
-                settings.Style = CelStyle.AnimatedFilm;
-                settings.AnimatedFilm.Haze = 35;
-                Assert.Equal("0.35f", ShaderVariants.Macros(ShaderVariant.Normal, settings).Single(m => m.Name == "CEL_HAZE").Value);
             }
             finally
             {
                 System.Globalization.CultureInfo.CurrentCulture = previous;
             }
-        }
-
-        [Fact]
-        public void SensitivityLowersTheThreshold()
-        {
-            for (var s = ComicBookSettings.EdgeSensitivityMin; s < ComicBookSettings.EdgeSensitivityMax; s++)
-                Assert.True(ShaderVariants.Threshold(s + 1) < ShaderVariants.Threshold(s));
         }
 
         [Fact]
@@ -175,77 +175,14 @@ namespace SirCelShading.Tests
         }
 
         [Fact]
-        public void EachStyleCompilesItsOwnVariants()
+        public void EverySettingChangesTheVariants()
         {
-            var signatures = CelStyles.MenuOrder
-                .Select(style => ShaderVariants.Signature(new Settings { Style = style }))
-                .Distinct()
-                .Count();
-            Assert.Equal(3, signatures);
-        }
+            var reference = ShaderVariants.Signature(new Settings());
 
-        [Fact]
-        public void OnlyAlbedoStylesReadTheGBuffer()
-        {
-            Assert.False(ShaderVariants.NeedsAlbedo(CelStyle.ComicBook));
-            Assert.True(ShaderVariants.NeedsAlbedo(CelStyle.AnimatedFilm));
-            Assert.True(ShaderVariants.NeedsAlbedo(CelStyle.ClearLine));
-        }
-
-        // Every setting of a style pushed to its maximum, then to its minimum.
-        private static void PushEveryOtherStyle(Settings s, CelStyle kept, bool max)
-        {
-            if (kept != CelStyle.ComicBook)
-                s.ComicBook = max
-                    ? new ComicBookSettings { Tones = ComicBookSettings.TonesMax, OutlineWidth = ComicBookSettings.OutlineWidthMax, OutlineStrength = ComicBookSettings.OutlineStrengthMin, EdgeSensitivity = ComicBookSettings.EdgeSensitivityMax, Vibrance = ComicBookSettings.VibranceMax }
-                    : new ComicBookSettings { Tones = ComicBookSettings.TonesMin, OutlineWidth = ComicBookSettings.OutlineWidthMin, OutlineStrength = ComicBookSettings.OutlineStrengthMin, EdgeSensitivity = ComicBookSettings.EdgeSensitivityMin, Vibrance = ComicBookSettings.VibranceMin };
-            if (kept != CelStyle.AnimatedFilm)
-                s.AnimatedFilm = max
-                    ? new AnimatedFilmSettings { ShadeTones = AnimatedFilmSettings.ShadeTonesMax, OutlineStrength = AnimatedFilmSettings.OutlineStrengthMax, RimLight = AnimatedFilmSettings.RimLightMax, Haze = AnimatedFilmSettings.HazeMax }
-                    : new AnimatedFilmSettings { ShadeTones = AnimatedFilmSettings.ShadeTonesMin, OutlineStrength = AnimatedFilmSettings.OutlineStrengthMin, RimLight = AnimatedFilmSettings.RimLightMin, Haze = AnimatedFilmSettings.HazeMin };
-            if (kept != CelStyle.ClearLine)
-                s.ClearLine = max
-                    ? new ClearLineSettings { OutlineStrength = ClearLineSettings.OutlineStrengthMax, EdgeSensitivity = ClearLineSettings.EdgeSensitivityMax, Shadows = ClearLineSettings.ShadowsMax, Vibrance = ClearLineSettings.VibranceMax }
-                    : new ClearLineSettings { OutlineStrength = ClearLineSettings.OutlineStrengthMin, EdgeSensitivity = ClearLineSettings.EdgeSensitivityMin, Shadows = ClearLineSettings.ShadowsMin, Vibrance = ClearLineSettings.VibranceMin };
-        }
-
-        [Theory]
-        [InlineData(CelStyle.ComicBook)]
-        [InlineData(CelStyle.AnimatedFilm)]
-        [InlineData(CelStyle.ClearLine)]
-        public void TheSettingsOfOneStyleNeverChangeAnother(CelStyle style)
-        {
-            var reference = new Settings { Style = style };
-            var pushedUp = new Settings { Style = style };
-            var pushedDown = new Settings { Style = style };
-            PushEveryOtherStyle(pushedUp, style, true);
-            PushEveryOtherStyle(pushedDown, style, false);
-
-            foreach (var variant in new[] { ShaderVariant.Normal, ShaderVariant.AlphaLuminance, ShaderVariant.NoTonemapping })
-            {
-                var expected = ShaderVariants.Macros(variant, reference).Select(m => m.ToString()).ToArray();
-                Assert.Equal(expected, ShaderVariants.Macros(variant, pushedUp).Select(m => m.ToString()).ToArray());
-                Assert.Equal(expected, ShaderVariants.Macros(variant, pushedDown).Select(m => m.ToString()).ToArray());
-            }
-            Assert.Equal(ShaderVariants.Signature(reference), ShaderVariants.Signature(pushedUp));
-            Assert.Equal(ShaderVariants.Signature(reference), ShaderVariants.Signature(pushedDown));
-        }
-
-        [Theory]
-        [InlineData(CelStyle.ComicBook)]
-        [InlineData(CelStyle.AnimatedFilm)]
-        [InlineData(CelStyle.ClearLine)]
-        public void TheSettingsOfTheSelectedStyleDoChangeIt(CelStyle style)
-        {
-            var reference = new Settings { Style = style };
-            var changed = new Settings { Style = style };
-            PushEveryOtherStyle(changed, CelStyle.ComicBook, true);
-            PushEveryOtherStyle(changed, CelStyle.AnimatedFilm, true);
-            PushEveryOtherStyle(changed, CelStyle.ClearLine, true);
-            // PushEveryOtherStyle leaves the kept style alone; three passes with
-            // a different kept style push all three.
-
-            Assert.NotEqual(ShaderVariants.Signature(reference), ShaderVariants.Signature(changed));
+            Assert.NotEqual(reference, ShaderVariants.Signature(new Settings { AnimatedFilm = new AnimatedFilmSettings { ShadeTones = 2 } }));
+            Assert.NotEqual(reference, ShaderVariants.Signature(new Settings { AnimatedFilm = new AnimatedFilmSettings { OutlineStrength = 10 } }));
+            Assert.NotEqual(reference, ShaderVariants.Signature(new Settings { AnimatedFilm = new AnimatedFilmSettings { RimLight = 10 } }));
+            Assert.NotEqual(reference, ShaderVariants.Signature(new Settings { AnimatedFilm = new AnimatedFilmSettings { Haze = 10 } }));
         }
     }
 }

@@ -10,8 +10,8 @@
   <Id>RougeSable/sir-cel-shading</Id>
   <FriendlyName>Sir Cel Shading</FriendlyName>
   <Author>RougeSable</Author>
-  <Tooltip>Cel shading in three styles: Comic book, Animated film and Clear line.</Tooltip>
-  <Description>Sir Cel Shading gives the game a cel-shaded look, in the style of the player's choice. Clear line (the default): thin even outlines, bright plain colors, almost no shadows. Animated film: shadows in two or three soft tones, thin outlines in a darker shade of each object, a rim of light on silhouettes seen against the sun, and distant things fading into the sky. Comic book: black outlines and flat colors. The player picks the style and turns the effect on or off at will, in the plugin settings or with /cel in the chat (/cel comic, /cel animated, /cel clearline, /cel status), without restarting the game. Everything happens on the player's machine: a player without the plugin sees the game's own rendering.</Description>
+  <Tooltip>Animated film cel shading: soft shadow tones, colored outlines, rim light and distance haze.</Tooltip>
+  <Description>Sir Cel Shading gives the game an animated film look, in the spirit of Breath of the Wild or Ghibli: shadows in two or three soft tones, thin outlines in a darker shade of each object, a rim of light on silhouettes seen against the sun, and distant things fading into the sky. The player turns the effect on or off at will, in the plugin settings or with /cel in the chat (/cel on, /cel off, /cel status), without restarting the game. Everything happens on the player's machine: a player without the plugin sees the game's own rendering.</Description>
   <Commit>0000000000000000000000000000000000000000</Commit>
   <SourceDirectories>
     <Directory>Source</Directory>

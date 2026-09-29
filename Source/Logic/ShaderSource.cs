@@ -3,8 +3,7 @@ namespace SirCelShading
     // The variant of the final colors pass (Postprocess/Tonemapping/Main.hlsl of
     // the game), written by the plugin to the player's folder then compiled by
     // the game itself (MyShaderCompiler.Compile, then MyComputeShaders.Create),
-    // with its own headers. The three styles live in the same file; the
-    // CEL_STYLE macro picks one when the game compiles it.
+    // with its own headers.
     //
     // Why here, in the final colors: it is the last pass that sees the whole
     // scene, before the selection highlight, the billboards and FXAA. The
@@ -18,8 +17,8 @@ namespace SirCelShading
         // declares t31; the game's pass only uses t0 to t3.
         public const int DepthSlot = 31;
 
-        // Slot of the scene albedo (MyGBuffer.Main.GBuffer0), read by Animated
-        // film and Clear line. No file of Content/Shaders declares t27.
+        // Slot of the scene albedo (MyGBuffer.Main.GBuffer0), read by the
+        // effect. No file of Content/Shaders declares t27.
         public const int AlbedoSlot = 27;
 
         // Game headers the variant depends on, relative to Content/Shaders.
@@ -48,39 +47,22 @@ namespace SirCelShading
         }
 
         private const string Header =
-@"// Sir Cel Shading: cel shading in three styles (Comic book, Animated film,
-// Clear line). Variant of Postprocess/Tonemapping/Main.hlsl, written by the
-// plugin every time the game starts and compiled by the game itself. Do not
-// edit by hand.
+@"// Sir Cel Shading: Animated film cel shading. Variant of
+// Postprocess/Tonemapping/Main.hlsl, written by the plugin every time the game
+// starts and compiled by the game itself. Do not edit by hand.
 //
 // The game's body is kept as is (grain, exposure, bloom, filmic curve, color
-// filters); the style comes next, right before the sRGB conversion.
+// filters); the effect comes next, right before the sRGB conversion.
 
 ";
 
         private const string Body =
 @"
-#define CEL_STYLE_COMIC_BOOK 0
-#define CEL_STYLE_ANIMATED_FILM 1
-#define CEL_STYLE_CLEAR_LINE 2
-
-#ifndef CEL_STYLE
-#define CEL_STYLE CEL_STYLE_CLEAR_LINE
-#endif
-#ifndef CEL_TONES
-#define CEL_TONES 4
-#endif
-#ifndef CEL_WIDTH
-#define CEL_WIDTH 1
-#endif
 #ifndef CEL_STRENGTH
-#define CEL_STRENGTH 1.0f
+#define CEL_STRENGTH 0.7f
 #endif
 #ifndef CEL_THRESHOLD
 #define CEL_THRESHOLD 0.75f
-#endif
-#ifndef CEL_SATURATION
-#define CEL_SATURATION 1.15f
 #endif
 #ifndef CEL_SHADE_TONES
 #define CEL_SHADE_TONES 3
@@ -91,22 +73,12 @@ namespace SirCelShading
 #ifndef CEL_HAZE
 #define CEL_HAZE 0.6f
 #endif
-#ifndef CEL_SHADOWS
-#define CEL_SHADOWS 0.15f
-#endif
 
-// Width of the step between two tones of Comic book, as a fraction of a
-// tone: enough for a noisy texture not to flicker, little enough to keep the
-// flat area.
-#define CEL_SOFTNESS 0.06f
+// Distance, in pixels, between the depth reads of the outline measure.
+#define CEL_WIDTH 1
 
-// Width of the outline ramp, as a multiple of the threshold. Clear line wants
-// even, crisp lines.
-#if CEL_STYLE == CEL_STYLE_CLEAR_LINE
-#define CEL_OUTLINE_SPAN 1.25f
-#else
+// Width of the outline ramp, as a multiple of the threshold.
 #define CEL_OUTLINE_SPAN 2
-#endif
 
 // Inverse of the distance: on a flat surface, it varies linearly on screen.
 // Its second derivative is zero on a plane, and only lights up at silhouettes
@@ -159,32 +131,6 @@ float CelOutline(uint2 texel)
     return smoothstep(CEL_THRESHOLD, CEL_OUTLINE_SPAN * CEL_THRESHOLD, measure);
 }
 
-#if CEL_STYLE == CEL_STYLE_COMIC_BOOK
-
-// Comic book flat colors: the value (the strongest channel, in sRGB) falls on
-// steps, hue and saturation are kept. Under half of the first step the image
-// stays the game's: the black of space stays black. The transition is
-// continuous there (half a step gives half a step).
-float3 CelFlatColors(float3 color)
-{
-    float3 srgb = rgb_to_srgb(saturate(color));
-    float value = max(srgb.r, max(srgb.g, srgb.b));
-    float scale = value * CEL_TONES;
-    if (scale < 0.5f)
-        return color;
-
-    float base = floor(scale);
-    float transition = smoothstep(0.5f - CEL_SOFTNESS, 0.5f + CEL_SOFTNESS, scale - base);
-    float level = min((base + transition) / CEL_TONES, 1.0f);
-    float3 flatColor = srgb * (level / value);
-
-    float gray = dot(flatColor, float3(0.2126f, 0.7152f, 0.0722f));
-    flatColor = saturate(lerp(gray.xxx, flatColor, CEL_SATURATION));
-    return srgb_to_rgb(flatColor);
-}
-
-#else
-
 static const float3 CelLuma = float3(0.2126f, 0.7152f, 0.0722f);
 
 int2 CelLastTexel()
@@ -194,7 +140,7 @@ int2 CelLastTexel()
     return min(int2(width, height), int2(frame_.Screen.resolution)) - 1;
 }
 
-// Saturation in sRGB, like the flat colors of Comic book.
+// Saturation in sRGB.
 float3 CelVivid(float3 color, float amount)
 {
     float3 srgb = rgb_to_srgb(saturate(color));
@@ -223,16 +169,12 @@ float3 CelRelight(float3 color, float3 albedo, float lighting, float target)
     return lerp(albedo * target, relit, saturate(lighting * 4));
 }
 
-#endif
-
-#if CEL_STYLE == CEL_STYLE_ANIMATED_FILM
-
 // Softness of the step between two light tones, as a fraction of a tone:
 // wide, so that shadows blend like painted ones.
 #define CEL_BAND_SOFTNESS 0.2f
 // Light of the darkest tone: shadows are colored, never black.
 #define CEL_SHADOW_FLOOR 0.45f
-// Saturation added by the style.
+// Saturation added by the effect.
 #define CEL_ANIMATED_SATURATION 1.1f
 // Width of the rim light, in pixels.
 #define CEL_RIM_WIDTH 3
@@ -355,8 +297,6 @@ float CelHazeAmount(float dist)
     return CEL_HAZE * CEL_HAZE_MAX * smoothstep(CEL_HAZE_START, CEL_HAZE_END, octaves);
 }
 
-#endif
-
 [numthreads(NUMTHREADS_X, NUMTHREADS_Y, 1)]
 void __compute_shader(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
@@ -399,10 +339,6 @@ void __compute_shader(uint3 dispatchThreadID : SV_DispatchThreadID)
     color = saturate(color);
 
     // Sir Cel Shading.
-#if CEL_STYLE == CEL_STYLE_COMIC_BOOK
-    color = CelFlatColors(color);
-    color *= 1 - CelOutline(texel) * CEL_STRENGTH;
-#elif CEL_STYLE == CEL_STYLE_ANIMATED_FILM
     int2 last = CelLastTexel();
     int2 p = min(int2(texel), last);
     // Every thread of the group, before any branch: it waits for the others.
@@ -432,20 +368,6 @@ void __compute_shader(uint3 dispatchThreadID : SV_DispatchThreadID)
             color = lerp(color, sky.rgb, haze);
         }
     }
-#else
-    int2 last = CelLastTexel();
-    int2 p = min(int2(texel), last);
-    float hw = CelDepth[uint2(p)];
-    if (IsDepthForeground(hw))
-    {
-        float3 albedo = CelAlbedo[uint2(p)].rgb;
-        float lighting = CelLighting(color, albedo);
-        if (lighting >= 0 && lighting < 1)
-            color = CelRelight(color, albedo, lighting, 1 - (1 - lighting) * CEL_SHADOWS);
-    }
-    color = CelVivid(color, CEL_SATURATION);
-    color *= 1 - CelOutline(texel) * CEL_STRENGTH;
-#endif
 
     // The game's, unchanged.
     color = rgb_to_srgb(color);

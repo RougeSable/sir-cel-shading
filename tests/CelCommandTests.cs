@@ -13,10 +13,6 @@ namespace SirCelShading.Tests
         [InlineData("/cel off", CelAction.Disable)]
         [InlineData("/cel status", CelAction.Status)]
         [InlineData("/cel STATUS", CelAction.Status)]
-        [InlineData("/cel comic", CelAction.ComicBook)]
-        [InlineData("/cel animated", CelAction.AnimatedFilm)]
-        [InlineData("/cel clearline", CelAction.ClearLine)]
-        [InlineData("/cel  Clearline ", CelAction.ClearLine)]
         [InlineData("/cel whatever", CelAction.Unknown)]
         [InlineData("/cellar", CelAction.None)]
         [InlineData("hello", CelAction.None)]
@@ -28,61 +24,68 @@ namespace SirCelShading.Tests
         }
 
         [Theory]
-        [InlineData("/cel comic", CelStyle.ComicBook)]
-        [InlineData("/cel animated", CelStyle.AnimatedFilm)]
-        [InlineData("/cel clearline", CelStyle.ClearLine)]
-        public void AStyleCommandSwitchesToThatStyleAndTurnsTheEffectOn(string text, CelStyle expected)
+        [InlineData("/cel comic")]
+        [InlineData("/cel animated")]
+        [InlineData("/cel clearline")]
+        public void ThereAreNoStyleCommands(string text)
         {
-            var settings = new Settings { Enabled = false, Style = CelStyle.ComicBook };
-            if (expected == CelStyle.ComicBook)
-                settings.Style = CelStyle.ClearLine;
+            var settings = new Settings { Enabled = false };
 
-            Assert.True(CelCommand.Apply(CelCommand.Parse(text), settings));
-
-            Assert.Equal(expected, settings.Style);
-            Assert.True(settings.Enabled);
+            Assert.Equal(CelAction.Unknown, CelCommand.Parse(text));
+            Assert.False(CelCommand.Apply(CelCommand.Parse(text), settings));
+            Assert.False(settings.Enabled);
         }
 
         [Fact]
         public void StatusChangesNothing()
         {
-            var settings = new Settings { Enabled = true, Style = CelStyle.AnimatedFilm };
+            var settings = new Settings { Enabled = true };
 
             Assert.False(CelCommand.Apply(CelAction.Status, settings));
 
             Assert.True(settings.Enabled);
-            Assert.Equal(CelStyle.AnimatedFilm, settings.Style);
         }
 
         [Fact]
-        public void BareCelStillTurnsTheEffectOnAndOffWithoutChangingTheStyle()
+        public void BareCelTurnsTheEffectOffThenOn()
         {
-            var settings = new Settings { Enabled = true, Style = CelStyle.AnimatedFilm };
+            var settings = new Settings { Enabled = true };
 
-            CelCommand.Apply(CelCommand.Parse("/cel"), settings);
+            Assert.True(CelCommand.Apply(CelCommand.Parse("/cel"), settings));
             Assert.False(settings.Enabled);
-            CelCommand.Apply(CelCommand.Parse("/cel"), settings);
+            Assert.True(CelCommand.Apply(CelCommand.Parse("/cel"), settings));
             Assert.True(settings.Enabled);
-            Assert.Equal(CelStyle.AnimatedFilm, settings.Style);
         }
 
-        [Theory]
-        [InlineData(CelStyle.ComicBook, "Comic book")]
-        [InlineData(CelStyle.AnimatedFilm, "Animated film")]
-        [InlineData(CelStyle.ClearLine, "Clear line")]
-        public void StatusNamesTheStyleInUse(CelStyle style, string name)
+        [Fact]
+        public void OnAndOffSetTheSwitch()
         {
-            Assert.Equal(name, Texts.StyleName(style));
-            Assert.Contains(name, Texts.Status(true, style, null));
-            Assert.Contains(name, Texts.Status(false, style, null));
-            Assert.Contains(name, Texts.Status(true, style, Texts.StopFault));
+            var settings = new Settings { Enabled = true };
+
+            CelCommand.Apply(CelAction.Disable, settings);
+            Assert.False(settings.Enabled);
+            CelCommand.Apply(CelAction.Disable, settings);
+            Assert.False(settings.Enabled);
+            CelCommand.Apply(CelAction.Enable, settings);
+            Assert.True(settings.Enabled);
+        }
+
+        [Fact]
+        public void StatusSaysWhetherTheEffectIsOn()
+        {
+            Assert.Equal(Texts.On, Texts.Status(true, null));
+            Assert.Equal(Texts.Off, Texts.Status(false, null));
+            Assert.NotEqual(Texts.Status(true, null), Texts.Status(false, null));
+            Assert.StartsWith(Texts.StopPrefix, Texts.Status(true, Texts.StopFault));
         }
 
         [Fact]
         public void TheHelpListsEveryCommand()
         {
-            foreach (var command in new[] { "/cel comic", "/cel animated", "/cel clearline", "/cel status", "/cel on", "/cel off" })
+            foreach (var command in new[] { "/cel on", "/cel off", "/cel status" })
                 Assert.Contains(command, Texts.CommandHelp);
+            Assert.DoesNotContain("comic", Texts.CommandHelp);
+            Assert.DoesNotContain("clearline", Texts.CommandHelp);
         }
 
         [Fact]
@@ -96,6 +99,21 @@ namespace SirCelShading.Tests
             Assert.NotEmpty(texts);
             foreach (var text in texts)
                 Assert.True(text.All(ch => ch < 128), "not plain ASCII: " + text);
+        }
+
+        [Fact]
+        public void NoPlayerTextMentionsAStyleThatNoLongerExists()
+        {
+            var texts = typeof(Texts).GetFields(BindingFlags.Public | BindingFlags.Static)
+                .Where(f => f.IsLiteral && f.FieldType == typeof(string))
+                .Select(f => (string)f.GetRawConstantValue())
+                .ToArray();
+
+            foreach (var text in texts)
+            {
+                Assert.DoesNotContain("comic", text, System.StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("clear line", text, System.StringComparison.OrdinalIgnoreCase);
+            }
         }
     }
 }

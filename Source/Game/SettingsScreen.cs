@@ -10,13 +10,12 @@ namespace SirCelShading
     // next frame and is saved at once: the player sees the effect behind the
     // screen, without restarting the game.
     //
-    // First the Enable plugin checkbox, right below it the Style, then the
-    // settings of the selected style only: a slider shown here never changes
-    // another style.
+    // First the Enable plugin checkbox, then the settings of the rendering,
+    // Animated film, the only one there is.
     internal sealed class SettingsScreen : MyGuiScreenBase
     {
         private const float Width = 0.62f;
-        private const float Height = 0.76f;
+        private const float Height = 0.66f;
         private const float LabelColumn = -0.27f;
         private const float ControlColumn = 0.10f;
         private const float ValueColumn = 0.27f;
@@ -65,22 +64,7 @@ namespace SirCelShading
             Controls.Add(enable);
             y += LineSpacing;
 
-            // Right below: the style.
-            AddStyleChoice(y);
-            y += LineSpacing;
-
-            switch (m_settings.Style)
-            {
-                case CelStyle.ComicBook:
-                    y = AddComicBookSliders(m_settings.ComicBook, y);
-                    break;
-                case CelStyle.AnimatedFilm:
-                    y = AddAnimatedFilmSliders(m_settings.AnimatedFilm, y);
-                    break;
-                default:
-                    y = AddClearLineSliders(m_settings.ClearLine, y);
-                    break;
-            }
+            y = AddAnimatedFilmSliders(m_settings.AnimatedFilm, y);
 
             if (m_plugin.Stop != null && m_plugin.Stop.IsStopped)
             {
@@ -91,7 +75,7 @@ namespace SirCelShading
             var defaults = new MyGuiControlButton(new Vector2(-0.12f, buttonsY), text: new StringBuilder(Texts.DefaultsButton),
                 onButtonClick: b =>
                 {
-                    ResetSelectedStyle();
+                    m_settings.AnimatedFilm = new AnimatedFilmSettings();
                     Apply();
                     m_rebuild = true;
                 });
@@ -101,96 +85,20 @@ namespace SirCelShading
                 onButtonClick: b => CloseScreen()));
         }
 
-        private void AddStyleChoice(float y)
-        {
-            AddLabel(Texts.StyleLabel, Texts.StyleHelp, y);
-
-            var style = new MyGuiControlCombobox(new Vector2(ControlColumn, y));
-            style.Size = new Vector2(0.2f, style.Size.Y);
-            foreach (var s in CelStyles.MenuOrder)
-                style.AddItem((long)s, new StringBuilder(Texts.StyleName(s)));
-            style.SelectItemByKey((long)m_settings.Style);
-            style.SetToolTip(Texts.StyleHelp);
-            style.ItemSelected += () =>
-            {
-                var selected = (CelStyle)style.GetSelectedKey();
-                if (selected == m_settings.Style)
-                    return;
-                m_settings.Style = selected;
-                Apply();
-                // The sliders of the new style replace the others, once the
-                // combobox is done with its own event.
-                m_rebuild = true;
-            };
-            Controls.Add(style);
-        }
-
-        private float AddComicBookSliders(ComicBookSettings c, float y)
-        {
-            AddSlider(Texts.ComicTones, Texts.ComicTonesHelp, y, ComicBookSettings.TonesMin, ComicBookSettings.TonesMax,
-                c.Tones, v => c.Tones = v, "");
-            y += LineSpacing;
-            AddSlider(Texts.ComicOutlineWidth, Texts.ComicOutlineWidthHelp, y, ComicBookSettings.OutlineWidthMin, ComicBookSettings.OutlineWidthMax,
-                c.OutlineWidth, v => c.OutlineWidth = v, " px");
-            y += LineSpacing;
-            AddSlider(Texts.ComicOutlineStrength, Texts.ComicOutlineStrengthHelp, y, ComicBookSettings.OutlineStrengthMin, ComicBookSettings.OutlineStrengthMax,
-                c.OutlineStrength, v => c.OutlineStrength = v, " %");
-            y += LineSpacing;
-            AddSlider(Texts.EdgeSensitivity, Texts.EdgeSensitivityHelp, y, ComicBookSettings.EdgeSensitivityMin, ComicBookSettings.EdgeSensitivityMax,
-                c.EdgeSensitivity, v => c.EdgeSensitivity = v, "");
-            y += LineSpacing;
-            AddSlider(Texts.ColorVibrance, Texts.ColorVibranceHelp, y, ComicBookSettings.VibranceMin, ComicBookSettings.VibranceMax,
-                c.Vibrance, v => c.Vibrance = v, " %");
-            return y + LineSpacing;
-        }
-
         private float AddAnimatedFilmSliders(AnimatedFilmSettings a, float y)
         {
-            AddSlider(Texts.AnimatedShadeTones, Texts.AnimatedShadeTonesHelp, y, AnimatedFilmSettings.ShadeTonesMin, AnimatedFilmSettings.ShadeTonesMax,
+            AddSlider(Texts.ShadeTones, Texts.ShadeTonesHelp, y, AnimatedFilmSettings.ShadeTonesMin, AnimatedFilmSettings.ShadeTonesMax,
                 a.ShadeTones, v => a.ShadeTones = v, "");
             y += LineSpacing;
-            AddSlider(Texts.AnimatedOutlineStrength, Texts.AnimatedOutlineStrengthHelp, y, AnimatedFilmSettings.OutlineStrengthMin, AnimatedFilmSettings.OutlineStrengthMax,
+            AddSlider(Texts.OutlineStrength, Texts.OutlineStrengthHelp, y, AnimatedFilmSettings.OutlineStrengthMin, AnimatedFilmSettings.OutlineStrengthMax,
                 a.OutlineStrength, v => a.OutlineStrength = v, " %");
             y += LineSpacing;
-            AddSlider(Texts.AnimatedRimLight, Texts.AnimatedRimLightHelp, y, AnimatedFilmSettings.RimLightMin, AnimatedFilmSettings.RimLightMax,
+            AddSlider(Texts.RimLight, Texts.RimLightHelp, y, AnimatedFilmSettings.RimLightMin, AnimatedFilmSettings.RimLightMax,
                 a.RimLight, v => a.RimLight = v, " %");
             y += LineSpacing;
-            AddSlider(Texts.AnimatedHaze, Texts.AnimatedHazeHelp, y, AnimatedFilmSettings.HazeMin, AnimatedFilmSettings.HazeMax,
+            AddSlider(Texts.Haze, Texts.HazeHelp, y, AnimatedFilmSettings.HazeMin, AnimatedFilmSettings.HazeMax,
                 a.Haze, v => a.Haze = v, " %");
             return y + LineSpacing;
-        }
-
-        private float AddClearLineSliders(ClearLineSettings l, float y)
-        {
-            AddSlider(Texts.ClearLineOutlineStrength, Texts.ClearLineOutlineStrengthHelp, y, ClearLineSettings.OutlineStrengthMin, ClearLineSettings.OutlineStrengthMax,
-                l.OutlineStrength, v => l.OutlineStrength = v, " %");
-            y += LineSpacing;
-            AddSlider(Texts.EdgeSensitivity, Texts.EdgeSensitivityHelp, y, ClearLineSettings.EdgeSensitivityMin, ClearLineSettings.EdgeSensitivityMax,
-                l.EdgeSensitivity, v => l.EdgeSensitivity = v, "");
-            y += LineSpacing;
-            AddSlider(Texts.ClearLineShadows, Texts.ClearLineShadowsHelp, y, ClearLineSettings.ShadowsMin, ClearLineSettings.ShadowsMax,
-                l.Shadows, v => l.Shadows = v, " %");
-            y += LineSpacing;
-            AddSlider(Texts.ColorVibrance, Texts.ColorVibranceHelp, y, ClearLineSettings.VibranceMin, ClearLineSettings.VibranceMax,
-                l.Vibrance, v => l.Vibrance = v, " %");
-            return y + LineSpacing;
-        }
-
-        // Defaults for the selected style only: the other styles keep theirs.
-        private void ResetSelectedStyle()
-        {
-            switch (m_settings.Style)
-            {
-                case CelStyle.ComicBook:
-                    m_settings.ComicBook = new ComicBookSettings();
-                    break;
-                case CelStyle.AnimatedFilm:
-                    m_settings.AnimatedFilm = new AnimatedFilmSettings();
-                    break;
-                default:
-                    m_settings.ClearLine = new ClearLineSettings();
-                    break;
-            }
         }
 
         private void AddLabel(string text, string help, float y)
