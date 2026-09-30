@@ -68,7 +68,7 @@ namespace SirCelShading
 #define CEL_SHADE_TONES 3
 #endif
 #ifndef CEL_RIM
-#define CEL_RIM 0.6f
+#define CEL_RIM 0.2f
 #endif
 #ifndef CEL_HAZE
 #define CEL_HAZE 0.6f

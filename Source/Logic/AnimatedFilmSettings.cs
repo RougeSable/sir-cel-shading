@@ -15,7 +15,7 @@ namespace SirCelShading
 
         public const int RimLightMin = 0;
         public const int RimLightMax = 100;
-        public const int RimLightDefault = 60;
+        public const int RimLightDefault = 20;
 
         public const int HazeMin = 0;
         public const int HazeMax = 100;

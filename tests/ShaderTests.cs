@@ -138,7 +138,7 @@ namespace SirCelShading.Tests
             Assert.Equal("3", macros["CEL_SHADE_TONES"]);
             Assert.Equal("0.7f", macros["CEL_STRENGTH"]);
             Assert.Equal("0.75f", macros["CEL_THRESHOLD"]);
-            Assert.Equal("0.6f", macros["CEL_RIM"]);
+            Assert.Equal("0.2f", macros["CEL_RIM"]);
             Assert.Equal("0.6f", macros["CEL_HAZE"]);
             Assert.Equal(5, macros.Count - 1); // the five macros of the rendering, plus NUMTHREADS
         }

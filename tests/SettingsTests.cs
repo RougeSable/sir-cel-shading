@@ -30,6 +30,7 @@ namespace SirCelShading.Tests
             Assert.True(s.Enabled);
             Assert.Equal(AnimatedFilmSettings.ShadeTonesDefault, s.AnimatedFilm.ShadeTones);
             Assert.Equal(AnimatedFilmSettings.OutlineStrengthDefault, s.AnimatedFilm.OutlineStrength);
+            Assert.Equal(20, AnimatedFilmSettings.RimLightDefault);
             Assert.Equal(AnimatedFilmSettings.RimLightDefault, s.AnimatedFilm.RimLight);
             Assert.Equal(AnimatedFilmSettings.HazeDefault, s.AnimatedFilm.Haze);
         }
@@ -203,6 +204,7 @@ namespace SirCelShading.Tests
 
             Assert.Null(problem);
             Assert.Equal(AnimatedFilmSettings.HazeMax, s.AnimatedFilm.Haze);
+            Assert.Equal(20, AnimatedFilmSettings.RimLightDefault);
             Assert.Equal(AnimatedFilmSettings.RimLightDefault, s.AnimatedFilm.RimLight);
         }
     }
