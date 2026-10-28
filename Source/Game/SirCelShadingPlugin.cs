@@ -11,8 +11,10 @@ using VRageRender;
 namespace SirCelShading
 {
     // Sir Cel Shading, a client-side plugin loaded by Pulsar. It only does cel
-    // shading, in the Animated film style, on the player's machine: nothing goes through
-    // the server, a player without the plugin sees the game's rendering.
+    // shading, in the Animated film style, on the player's machine: a player
+    // without the plugin sees the game's rendering. Its only exchange with a
+    // server is its error and crash reports, on the studio's servers only
+    // (ErrorReporting).
     public class SirCelShadingPlugin : IPlugin
     {
         public const string Id = "sir-cel-shading";
@@ -21,9 +23,13 @@ namespace SirCelShading
         // final colors after us (60 per second).
         private const int CoexistenceInterval = 600;
 
+        // The plugin's lines in the game log; error lines also give reports.
+        private static readonly PluginLog s_log = new PluginLog(Id, line => MyLog.Default.WriteLine(line), null);
+
         private Harmony m_harmony;
         private RenderEngine m_engine;
         private SessionStop m_stop;
+        private ErrorReporting m_reporting;
         private string m_settingsDirectory;
         private bool m_patched;
         private bool m_commandHooked;
@@ -43,22 +49,34 @@ namespace SirCelShading
 
         public static void Log(string text)
         {
-            MyLog.Default.WriteLine("[" + Id + "] " + text);
+            s_log.Info(text);
+        }
+
+        // An error line in the game log, which also gives an error report.
+        public static void LogError(string text, Exception error = null)
+        {
+            s_log.Error(text, error);
         }
 
         public void Init(object gameInstance)
         {
             Instance = this;
-            m_stop = new SessionStop(Log);
-            FinalColorsPass.Stop = m_stop;
 
             // The player's settings folder: %AppData%\SpaceEngineers\Storage\sir-cel-shading
             m_settingsDirectory = Path.Combine(MyFileSystem.UserDataPath, "Storage", Id);
 
+            // First of all: the errors of what follows are reported, and the
+            // crash of the previous session, if any, is queued.
+            m_reporting = ErrorReporting.Start(m_settingsDirectory, Id);
+            s_log.Reporter = m_reporting == null ? null : m_reporting.Reporter;
+
+            m_stop = SessionStop.Logging((detail, error) => s_log.Error(detail, error));
+            FinalColorsPass.Stop = m_stop;
+
             string problem;
             FinalColorsPass.CurrentSettings = SettingsFile.Load(m_settingsDirectory, out problem);
             if (problem != null)
-                Log(problem + "; using the defaults");
+                LogError(problem + "; using the defaults");
 
             var settings = FinalColorsPass.CurrentSettings;
             Log("loaded, Animated film, " + (settings.Enabled ? "on" : "off"));
@@ -69,7 +87,7 @@ namespace SirCelShading
             }
             catch (Exception e)
             {
-                m_stop.Stop("preparation failed: " + e, Texts.StopPatch);
+                m_stop.Stop("preparation failed", Texts.StopPatch, e);
             }
         }
 
@@ -99,7 +117,7 @@ namespace SirCelShading
             }
             catch (Exception e)
             {
-                m_stop.Stop("could not write " + shaderPath + ": " + e.Message, Texts.StopShaderFile);
+                m_stop.Stop("could not write " + shaderPath, Texts.StopShaderFile, e);
                 return;
             }
             FinalColorsPass.ShaderPath = shaderPath;
@@ -167,9 +185,15 @@ namespace SirCelShading
             }
             catch (Exception e)
             {
-                // A failure here must never bring the game down.
-                m_stop.Stop("fault on the main thread: " + e, Texts.StopFault);
+                // A failure here must never bring the game down. Already
+                // stopped: the log is not repeated every frame, but the
+                // fault is still counted in its report.
+                if (!m_stop.Stop("fault on the main thread", Texts.StopFault, e) && s_log.Reporter != null)
+                    s_log.Reporter.Record("fault on the main thread", e);
             }
+
+            if (m_reporting != null)
+                m_reporting.Update();
         }
 
         private static void Notify(string message)
@@ -212,7 +236,7 @@ namespace SirCelShading
             }
             catch (Exception e)
             {
-                Log("settings not saved: " + e.Message);
+                LogError("settings not saved", e);
             }
         }
 
@@ -236,8 +260,13 @@ namespace SirCelShading
             }
             catch (Exception e)
             {
-                Log("incomplete shutdown: " + e.Message);
+                LogError("incomplete shutdown", e);
             }
+
+            // The clean exit: the reports wait on disk for the next
+            // connection to our servers, and no crash will be reported.
+            if (m_reporting != null)
+                m_reporting.End();
             Instance = null;
         }
     }

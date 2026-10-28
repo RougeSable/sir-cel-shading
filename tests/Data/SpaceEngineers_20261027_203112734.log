@@ -1,0 +1,129 @@
+2026-10-27 20:31:12.734 - Thread:   1 ->  Log Started
+2026-10-27 20:31:12.734 - Thread:   1 ->  Timezone (local - UTC): 1h
+2026-10-27 20:31:12.771 - Thread:   1 ->  App Version: 01_206_032
+2026-10-27 20:31:12.808 - Thread:   1 ->  Obfuscated: False, Platform: 64-bit
+2026-10-27 20:31:12.845 - Thread:   1 ->  Is official: True
+2026-10-27 20:31:12.882 - Thread:   1 ->  Environment.ProcessorCount: 16
+2026-10-27 20:31:12.919 - Thread:   1 ->  Environment.OSVersion: Microsoft Windows NT 10.0.22631.0
+2026-10-27 20:31:12.956 - Thread:   1 ->  Environment.CommandLine: "C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Bin64\SpaceEngineers.exe" -nosplash -skipintro
+2026-10-27 20:31:12.993 - Thread:   1 ->  Environment.Is64BitProcess: True
+2026-10-27 20:31:13.030 - Thread:   1 ->  Environment.Is64BitOperatingSystem: True
+2026-10-27 20:31:13.067 - Thread:   1 ->  Environment.Version: 4.0.30319.42000
+2026-10-27 20:31:13.104 - Thread:   1 ->  Environment.CurrentDirectory: C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Bin64
+2026-10-27 20:31:13.141 - Thread:   1 ->  CPU Info: AMD Ryzen 7 5800X3D 8-Core Processor
+2026-10-27 20:31:13.178 - Thread:   1 ->  Default Culture: fr-FR
+2026-10-27 20:31:13.215 - Thread:   1 ->  Default UI Culture: fr-FR
+2026-10-27 20:31:13.252 - Thread:   1 ->  IntPtr.Size: 8
+2026-10-27 20:31:13.289 - Thread:   1 ->  MyFileSystem.UserDataPath: C:\Users\JeanDupont\AppData\Roaming\SpaceEngineers
+2026-10-27 20:31:13.326 - Thread:   1 ->  Service.IsActive: True
+2026-10-27 20:31:13.363 - Thread:   1 ->  Service.IsOnline: True
+2026-10-27 20:31:13.400 - Thread:   1 ->  Service.OwnsGame: True
+2026-10-27 20:31:13.437 - Thread:   1 ->  Service.UserId: 76561198034125587
+2026-10-27 20:31:13.474 - Thread:   1 ->  Service.UserName: Kestrel_Fr
+2026-10-27 20:31:13.511 - Thread:   1 ->  Service.Branch: 
+2026-10-27 20:31:13.548 - Thread:   1 ->  Build date: 2026-09-30 11:02
+2026-10-27 20:31:13.585 - Thread:   1 ->  Build version: 1.206.32.0
+2026-10-27 20:31:13.622 - Thread:   1 ->  Using OnlineUserId as AnalyticsUserId "76561198034125587"
+2026-10-27 20:31:13.659 - Thread:   1 ->  Analytics session started: UserID = (76561198034125587) SessionID = (6f1d3a2e-55c1-4b5e-9a5e-2c8f2a1d9b77)
+2026-10-27 20:31:13.696 - Thread:   1 ->  MyConfig.Load() - START
+2026-10-27 20:31:13.733 - Thread:   1 ->  Path: C:\Users\JeanDupont\AppData\Roaming\SpaceEngineers\SpaceEngineers.cfg
+2026-10-27 20:31:13.770 - Thread:   1 ->  MyConfig.Load() - END
+2026-10-27 20:31:13.807 - Thread:   1 ->  Pulsar: loading plugins from C:\Users\JeanDupont\AppData\Local\Pulsar\GitHub
+2026-10-27 20:31:13.927 - Thread:   1 ->  [sir-cel-shading] loaded, Animated film, on
+2026-10-27 20:31:13.964 - Thread:   1 ->  [sir-cel-shading] hooked on MyToneMapping.Run, depth in t31, albedo in t27, shader written to C:\Users\JeanDupont\AppData\Roaming\SpaceEngineers\Storage\sir-cel-shading\Shaders\CelShading.hlsl
+2026-10-27 20:31:14.001 - Thread:  12 ->  Error: Texture Textures\Models\Cubes\armor\heavy_armor_ng.dds not found
+2026-10-27 20:31:14.038 - Thread:   1 ->  Exception occurred, but application is continuing. Exception: System.IO.FileNotFoundException: Could not find file 'C:\Users\JeanDupont\AppData\Roaming\SpaceEngineers\Mods\2843771234_legacy.sbm'.
+   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)
+   at System.IO.FileStream.Init(String path, FileMode mode, FileAccess access)
+2026-10-27 20:31:14.938 - Thread:   1 ->  Connecting to: steam://203.0.113.42:27016
+2026-10-27 20:31:14.975 - Thread:   1 ->  MyMultiplayerClient: connected to server Sirius Immersion PTU
+2026-10-27 20:31:15.012 - Thread:   1 ->  Joining lobby: 109775243120897531
+2026-10-27 20:31:15.049 - Thread:   1 ->  Downloading world mods - START
+2026-10-27 20:31:15.086 - Thread:   1 ->  Downloading world mods - END
+2026-10-27 20:31:15.123 - Thread:   1 ->  World Name = 'Sirius Immersion PTU'
+2026-10-27 20:31:15.134 - Thread:   1 ->  ERROR: Physical material 0 is missing for voxel material Ice_00
+2026-10-27 20:31:15.145 - Thread:   1 ->  ERROR: Physical material 1 is missing for voxel material Ice_01
+2026-10-27 20:31:15.156 - Thread:   1 ->  ERROR: Physical material 2 is missing for voxel material Ice_02
+2026-10-27 20:31:15.167 - Thread:   1 ->  ERROR: Physical material 3 is missing for voxel material Ice_03
+2026-10-27 20:31:15.178 - Thread:   1 ->  ERROR: Physical material 4 is missing for voxel material Ice_04
+2026-10-27 20:31:15.189 - Thread:   1 ->  ERROR: Physical material 5 is missing for voxel material Ice_05
+2026-10-27 20:31:15.200 - Thread:   1 ->  ERROR: Physical material 6 is missing for voxel material Ice_06
+2026-10-27 20:31:15.211 - Thread:   1 ->  ERROR: Physical material 7 is missing for voxel material Ice_07
+2026-10-27 20:31:15.222 - Thread:   1 ->  ERROR: Physical material 8 is missing for voxel material Ice_08
+2026-10-27 20:31:15.233 - Thread:   1 ->  ERROR: Physical material 9 is missing for voxel material Ice_09
+2026-10-27 20:31:15.244 - Thread:   1 ->  ERROR: Physical material 10 is missing for voxel material Ice_10
+2026-10-27 20:31:15.255 - Thread:   1 ->  ERROR: Physical material 11 is missing for voxel material Ice_11
+2026-10-27 20:31:15.266 - Thread:   1 ->  ERROR: Physical material 12 is missing for voxel material Ice_12
+2026-10-27 20:31:15.277 - Thread:   1 ->  ERROR: Physical material 13 is missing for voxel material Ice_13
+2026-10-27 20:31:15.777 - Thread:   4 ->  [sir-cel-shading] frame check 0: variant Normal served, depth bound
+2026-10-27 20:31:16.277 - Thread:   4 ->  [sir-cel-shading] frame check 1: variant Normal served, depth bound
+2026-10-27 20:31:16.777 - Thread:   4 ->  [sir-cel-shading] frame check 2: variant Normal served, depth bound
+2026-10-27 20:31:17.277 - Thread:   4 ->  [sir-cel-shading] frame check 3: variant Normal served, depth bound
+2026-10-27 20:31:17.777 - Thread:   4 ->  [sir-cel-shading] frame check 4: variant Normal served, depth bound
+2026-10-27 20:31:18.277 - Thread:   4 ->  [sir-cel-shading] frame check 5: variant Normal served, depth bound
+2026-10-27 20:31:18.777 - Thread:   4 ->  [sir-cel-shading] frame check 6: variant Normal served, depth bound
+2026-10-27 20:31:19.277 - Thread:   4 ->  [sir-cel-shading] frame check 7: variant Normal served, depth bound
+2026-10-27 20:31:19.777 - Thread:   4 ->  [sir-cel-shading] frame check 8: variant Normal served, depth bound
+2026-10-27 20:31:20.277 - Thread:   4 ->  [sir-cel-shading] frame check 9: variant Normal served, depth bound
+2026-10-27 20:31:20.777 - Thread:   4 ->  [sir-cel-shading] frame check 10: variant Normal served, depth bound
+2026-10-27 20:31:21.277 - Thread:   4 ->  [sir-cel-shading] frame check 11: variant Normal served, depth bound
+2026-10-27 20:31:21.777 - Thread:   4 ->  [sir-cel-shading] frame check 12: variant Normal served, depth bound
+2026-10-27 20:31:22.277 - Thread:   4 ->  [sir-cel-shading] frame check 13: variant Normal served, depth bound
+2026-10-27 20:31:22.777 - Thread:   4 ->  [sir-cel-shading] frame check 14: variant Normal served, depth bound
+2026-10-27 20:31:23.277 - Thread:   4 ->  [sir-cel-shading] frame check 15: variant Normal served, depth bound
+2026-10-27 20:31:23.777 - Thread:   4 ->  [sir-cel-shading] frame check 16: variant Normal served, depth bound
+2026-10-27 20:31:24.277 - Thread:   4 ->  [sir-cel-shading] frame check 17: variant Normal served, depth bound
+2026-10-27 20:31:24.777 - Thread:   4 ->  [sir-cel-shading] frame check 18: variant Normal served, depth bound
+2026-10-27 20:31:25.277 - Thread:   4 ->  [sir-cel-shading] frame check 19: variant Normal served, depth bound
+2026-10-27 20:31:25.777 - Thread:   4 ->  [sir-cel-shading] frame check 20: variant Normal served, depth bound
+2026-10-27 20:31:26.277 - Thread:   4 ->  [sir-cel-shading] frame check 21: variant Normal served, depth bound
+2026-10-27 20:31:26.777 - Thread:   4 ->  [sir-cel-shading] frame check 22: variant Normal served, depth bound
+2026-10-27 20:31:27.277 - Thread:   4 ->  [sir-cel-shading] frame check 23: variant Normal served, depth bound
+2026-10-27 20:31:30.277 - Thread:   1 ->  Player Kestrel_Fr joined the game
+2026-10-27 20:31:30.314 - Thread:   1 ->  Grid name: Kestrel Hauler Mk2
+2026-10-27 20:31:30.351 - Thread:   1 ->  Respawn: MyCubeGrid 'Kestrel Hauler Mk2' (EntityId 132451789012345678) at Medical Room
+2026-10-27 20:31:30.388 - Thread:   1 ->  Kestrel_Fr: identity loaded
+2026-10-27 20:31:30.425 - Thread:   1 ->  IP: 203.0.113.42
+2026-10-27 20:31:30.635 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_00.mwm
+2026-10-27 20:31:30.845 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_01.mwm
+2026-10-27 20:31:31.055 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_02.mwm
+2026-10-27 20:31:31.265 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_03.mwm
+2026-10-27 20:31:31.475 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_04.mwm
+2026-10-27 20:31:31.685 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_05.mwm
+2026-10-27 20:31:31.895 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_06.mwm
+2026-10-27 20:31:32.105 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_07.mwm
+2026-10-27 20:31:32.315 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_08.mwm
+2026-10-27 20:31:32.525 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_09.mwm
+2026-10-27 20:31:32.735 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_10.mwm
+2026-10-27 20:31:32.945 - Thread:   9 ->  Error: failed to load model Models\Characters\Animations\helmet_11.mwm
+2026-10-27 20:31:44.945 - Thread:   1 ->  Exception occurred, but application is continuing. Exception: System.NullReferenceException: Object reference not set to an instance of an object.
+   at Sandbox.Game.Gui.MyHudNotifications.Update()
+   at Sandbox.Game.World.MySession.Update(MyTimeSpan updateTime)
+2026-10-27 20:31:59.745 - Thread:   7 ->  Render: device lost, DXGI_ERROR_DEVICE_REMOVED, failure reason 0x887A0006
+2026-10-27 20:31:59.782 - Thread:   7 ->  Exception occurred: SharpDX.SharpDXException: HRESULT: [0x887A0005], Module: [SharpDX.DXGI], ApiCode: [DXGI_ERROR_DEVICE_REMOVED/DeviceRemoved], Message: The GPU device instance has been suspended. Use GetDeviceRemovedReason to determine the appropriate action.
+
+   at SharpDX.Result.CheckError()
+   at SharpDX.DXGI.SwapChain.Present(Int32 syncInterval, PresentFlags flags)
+   at VRage.Render11.Common.MySwapChain.Present(Int32 interval)
+   at VRageRender.MyRender11.Present()
+   at VRageRender.MyRender11.FullDraw(Boolean draw)
+   at VRageRender.MyRenderThread.RenderCallback(Boolean async)
+   at VRageRender.MyRenderThread.RenderThreadStart(Object param) in C:\Users\JeanDupont\source\repos\VRage\MyRenderThread.cs:line 412
+2026-10-27 20:31:59.819 - Thread:   7 ->  ================================== CRASH INFO ==================================
+2026-10-27 20:31:59.819 - Thread:   7 ->  AppVersion: 1.206.32
+2026-10-27 20:31:59.819 - Thread:   7 ->  GameName: Space Engineers
+2026-10-27 20:31:59.819 - Thread:   7 ->  IsOutOfMemory: False
+2026-10-27 20:31:59.819 - Thread:   7 ->  IsGPU: True
+2026-10-27 20:31:59.819 - Thread:   7 ->  IsNative: False
+2026-10-27 20:31:59.819 - Thread:   7 ->  IsTask: False
+2026-10-27 20:31:59.819 - Thread:   7 ->  IsExperimental: False
+2026-10-27 20:31:59.819 - Thread:   7 ->  ProcessRunTime: 1163
+2026-10-27 20:31:59.819 - Thread:   7 ->  PCUCount: 0
+2026-10-27 20:31:59.819 - Thread:   7 ->  IsHang: False
+2026-10-27 20:31:59.819 - Thread:   7 ->  GCMemory: 3984
+2026-10-27 20:31:59.819 - Thread:   7 ->  GCMemoryAllocated: 4096
+2026-10-27 20:31:59.819 - Thread:   7 ->  HWAvailableMemory: 18422
+2026-10-27 20:31:59.819 - Thread:   7 ->  ProcessPrivateMemory: 9733
+2026-10-27 20:31:59.819 - Thread:   7 ->  AnalyticId: SE
+2026-10-27 20:31:59.819 - Thread:   7 ->  ================================== OFNI HSARC ==================================
+2026-10-27 20:31:59.823 - Thread:   7 ->  MyInitializer.OnCrash

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 
@@ -82,6 +83,20 @@ namespace SirCelShading
                 parts.Add(macro.ToString());
             return string.Join("|", parts.ToArray());
         }
+
+        // A variant the game refused to compile or to create. The effect stops
+        // for the session: a line in the game log, a notification to the
+        // player and, through the log, an "erreur" report.
+        public static bool Refuse(SessionStop stop, string description, string how, Exception error)
+        {
+            if (stop == null)
+                return false;
+            return stop.Stop("variant " + description + " " + how, Texts.StopVariantRefused, error);
+        }
+
+        public const string RefusedByCompiler = "refused by the game's compiler";
+        public const string RefusedWithoutDetail = "refused by the game's compiler (details in the render log)";
+        public const string RefusedAtCreation = "refused at creation";
 
         private static string Integer(int value)
         {

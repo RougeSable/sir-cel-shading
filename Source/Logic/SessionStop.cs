@@ -16,14 +16,29 @@ namespace SirCelShading
     // delivers the notifications.
     public sealed class SessionStop
     {
-        private readonly Action<string> m_log;
+        private readonly Action<string, Exception> m_log;
         private readonly ConcurrentQueue<string> m_notifications = new ConcurrentQueue<string>();
         private int m_stopped;
         private volatile string m_reason;
 
         public SessionStop(Action<string> log)
         {
-            m_log = log ?? (_ => { });
+            if (log == null)
+                m_log = (detail, error) => { };
+            else
+                m_log = (detail, error) => log(error == null ? detail : detail + ": " + error);
+        }
+
+        private SessionStop(Action<string, Exception> log, bool unused)
+        {
+            m_log = log ?? ((detail, error) => { });
+        }
+
+        // A stop whose log line is an error of the plugin (PluginLog.Error):
+        // it also gives an "erreur" report, the exception kept apart.
+        public static SessionStop Logging(Action<string, Exception> logError)
+        {
+            return new SessionStop(logError, true);
         }
 
         public bool IsStopped
@@ -41,11 +56,25 @@ namespace SirCelShading
         // nor the notification.
         public bool Stop(string detailForTheLog, string messageForThePlayer)
         {
+            return Stop(detailForTheLog, messageForThePlayer, null);
+        }
+
+        // The same, with the exception caught: it goes to the log after the
+        // detail.
+        public bool Stop(string detailForTheLog, string messageForThePlayer, Exception error)
+        {
             if (Interlocked.Exchange(ref m_stopped, 1) != 0)
                 return false;
 
             m_reason = messageForThePlayer;
-            m_log(detailForTheLog);
+            try
+            {
+                m_log(detailForTheLog, error);
+            }
+            catch (Exception)
+            {
+                // Writing the log must not prevent the stop.
+            }
             m_notifications.Enqueue(messageForThePlayer);
             return true;
         }

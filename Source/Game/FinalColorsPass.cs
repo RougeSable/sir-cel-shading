@@ -85,8 +85,8 @@ namespace SirCelShading
             {
                 GiveBack();
                 Stop.Stop(
-                    "fault on the render thread before the final colors: " + e,
-                    Texts.StopFault);
+                    "fault on the render thread before the final colors",
+                    Texts.StopFault, e);
             }
         }
 
@@ -113,8 +113,8 @@ namespace SirCelShading
             catch (Exception e)
             {
                 Stop.Stop(
-                    "fault on the render thread after the final colors: " + e,
-                    Texts.StopFault);
+                    "fault on the render thread after the final colors",
+                    Texts.StopFault, e);
             }
         }
 
@@ -125,11 +125,14 @@ namespace SirCelShading
             if (__exception != null && (s_replacedField != null || s_boundStage != null))
             {
                 try { GiveBack(); }
-                catch (Exception) { }
+                catch (Exception e)
+                {
+                    SirCelShadingPlugin.LogError("could not give the game its shaders back", e);
+                }
                 if (Stop != null)
                     Stop.Stop(
-                        "the final colors pass failed with our variant: " + __exception,
-                        Texts.StopFault);
+                        "the final colors pass failed with our variant",
+                        Texts.StopFault, __exception);
             }
             return __exception;
         }
@@ -183,17 +186,13 @@ namespace SirCelShading
                 }
                 catch (TargetInvocationException e)
                 {
-                    Stop.Stop(
-                        "variant " + description + " refused by the game's compiler: " + e.InnerException,
-                        Texts.StopVariantRefused);
+                    ShaderVariants.Refuse(Stop, description, ShaderVariants.RefusedByCompiler, e.InnerException ?? e);
                     return null;
                 }
 
                 if (code == null || code.Length == 0)
                 {
-                    Stop.Stop(
-                        "variant " + description + " refused by the game's compiler (details in the render log)",
-                        Texts.StopVariantRefused);
+                    ShaderVariants.Refuse(Stop, description, ShaderVariants.RefusedWithoutDetail, null);
                     return null;
                 }
 
@@ -204,9 +203,7 @@ namespace SirCelShading
                 }
                 catch (TargetInvocationException e)
                 {
-                    Stop.Stop(
-                        "variant " + description + " refused at creation: " + e.InnerException,
-                        Texts.StopVariantRefused);
+                    ShaderVariants.Refuse(Stop, description, ShaderVariants.RefusedAtCreation, e.InnerException ?? e);
                     return null;
                 }
             }

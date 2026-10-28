@@ -11,7 +11,7 @@
   <FriendlyName>Sir Cel Shading</FriendlyName>
   <Author>RougeSable</Author>
   <Tooltip>Animated film cel shading: soft shadow tones, colored outlines, rim light and distance haze.</Tooltip>
-  <Description>Sir Cel Shading gives the game an animated film look, in the spirit of Breath of the Wild or Ghibli: shadows in two or three soft tones, thin outlines in a darker shade of each object, a rim of light on silhouettes seen against the sun, and distant things fading into the sky. The player turns the effect on or off at will, in the plugin settings or with /cel in the chat (/cel on, /cel off, /cel status), without restarting the game. Everything happens on the player's machine: a player without the plugin sees the game's own rendering.</Description>
+  <Description>Sir Cel Shading gives the game an animated film look, in the spirit of Breath of the Wild or Ghibli: shadows in two or three soft tones, thin outlines in a darker shade of each object, a rim of light on silhouettes seen against the sun, and distant things fading into the sky. The player turns the effect on or off at will, in the plugin settings or with /cel in the chat (/cel on, /cel off, /cel status), without restarting the game. Everything happens on the player's machine: a player without the plugin sees the game's own rendering. On the Sirius servers only, the plugin reports its own errors and game crashes to the studio, without any player data; elsewhere nothing is sent.</Description>
   <Commit>0000000000000000000000000000000000000000</Commit>
   <SourceDirectories>
     <Directory>Source</Directory>

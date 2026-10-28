@@ -14,8 +14,10 @@ Also:
 - The player turns the effect on and off at will, without restarting the game.
 - Turned off, the game draws with its own shaders: the image is exactly the
   game's.
-- Everything happens on the player's machine. Nothing goes through the server,
-  and a player without the plugin sees the game's rendering.
+- Everything happens on the player's machine, and a player without the plugin
+  sees the game's rendering. The only thing that ever goes to a server is the
+  plugin's error and crash reports, and only on the studio's servers (PU and
+  PTU): see [Error reports](#error-reports).
 - The interface (HUD, menus, texts) stays sharp: it is drawn after the effect.
 
 ## Usage
@@ -114,6 +116,62 @@ seconds, Sir Cel Shading looks at who is hooked on `MyToneMapping.Run`
 (`Harmony.GetPatchInfo`). If it finds another owner, it steps aside and tells
 the player.
 
+## Error reports
+
+The plugin tells the studio about its own errors and about game crashes, in
+the form shared by all the studio's client-side plugins. It is the plugin's
+only exchange with a server.
+
+**What gives a report.**
+
+- Every exception the plugin catches and every error line it writes to the
+  game log (`[sir-cel-shading] ERROR: ...`) gives an `erreur` report. That
+  includes every stop listed above: a shader refused by the game's compiler
+  is in the game log, shown to the player, and reported.
+- The same error (same message, same top of stack) is reported once per game
+  session, with how many times it happened and when it was first and last
+  seen. It leaves 30 seconds after it first happens, so that its repetitions
+  are counted.
+- A crash. A marker, `Storage\sir-cel-shading\session.marker`, is put when
+  the game starts and removed when it exits cleanly. If the next start finds
+  it, the previous session never ended (crash, or the game was killed). The
+  plugin then reads that session's game log again (the previous
+  `SpaceEngineers_*.log` in `%AppData%\SpaceEngineers`) and builds a
+  `plantage` report: the game's CRASH INFO block, the exception that brought
+  the game down and its stack, the last 20 error lines of the game and the
+  last 20 lines of the plugin.
+
+**The report.** A UTF-8 JSON object:
+`{ greffon, version, genre, message, pile, premiere, derniere, nombre, session, lignes }`.
+`greffon` is "Sir Cel Shading", `version` the plugin's version, `genre`
+`erreur` or `plantage`, `pile` the stack, `premiere` and `derniere` the first
+and last time seen and `session` the start of the game session concerned
+(all UTC, ISO 8601), `nombre` the count, `lignes` lines of the log. Above
+32 KB, the oldest lines are dropped.
+
+**Nothing about the player.** A line that carries a Steam ID, a player name,
+a grid name or a server address is removed as a whole: lines are judged on
+the game's own wording (`UserId`, `UserName`, `Connecting to`, `Grid name`...),
+on the shape of the data (Steam IDs and other long numbers, IP addresses,
+`steam://` links) and on the names known on the machine (the player's name
+and Steam ID, the Windows user name). The Windows user folder becomes
+`%USERPROFILE%`. Lines of a stack trace keep their code names.
+
+**Only on our servers.** Reports leave with
+`MyAPIGateway.Multiplayer.SendMessageToServer`, on the studio's report
+channel 5465479001, only while the player is connected as a client to a
+dedicated server whose name (or world name) contains "Sirius", as PU and PTU
+do. The game's network channels are 16-bit numbers: 5465479001 does not fit,
+so its low 16 bits are sent, 38745, which is what the server listens to.
+Elsewhere (single player, a hosted game, anyone else's server) nothing
+leaves: reports wait in `Storage\sir-cel-shading\Reports`, one file each (100
+at most, oldest dropped first), across game launches, and leave at the next
+connection to PU or PTU, five per second at most.
+
+**Never at the cost of the game.** Writing, reading or sending a report never
+throws: a failure is swallowed, the report stays on disk and is tried again
+later.
+
 ## Name shown in Pulsar
 
 Pulsar reads the displayed name from the plugin's sheet in the Sirius catalog,
@@ -133,4 +191,7 @@ location, see `Directory.Build.props.example`.
 
 The tests cover the pure logic (`Source/Logic`): settings and their loading
 from earlier files, the chat command, session stops, coexistence, shader
-variants and the shader source. They need neither the game nor Pulsar.
+variants and the shader source, and the error reports (their form, one report
+per error and per session, crash reports from a game log, scrubbing of player
+data on a game log in `tests/Data`, the queue and its failures). They need
+neither the game nor Pulsar.

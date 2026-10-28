@@ -21,6 +21,11 @@
     <Compile Include="..\Source\Logic\*.cs" Link="Logic\%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <!-- A game log of a session that crashed, as the game writes it. -->
+  <ItemGroup>
+    <None Include="Data\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
