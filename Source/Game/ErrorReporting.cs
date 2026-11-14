@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -12,14 +12,16 @@ using VRage.Utils;
 
 namespace SirCelShading
 {
-    // The plugin's only exchange with a server: its error and crash reports,
-    // sent on the studio's report channel while the player is on PU or PTU.
-    // Elsewhere they wait in Storage\sir-cel-shading\Reports.
+    // Le seul échange du greffon avec un serveur : ses rapports d'erreurs et de
+    // plantages, envoyés sur le canal de rapports du studio tant que le joueur
+    // est sur PU ou PTU. Ailleurs ils attendent dans
+    // Storage\sir-cel-shading\Reports.
     //
-    // Nothing here may break the game: every fault is swallowed.
+    // Rien ici ne doit casser le jeu : toute faute est avalée.
     internal sealed class ErrorReporting
     {
-        // Updates between two rounds (60 per second): about once a second.
+        // Mises à jour entre deux tours (60 par seconde) : environ une fois par
+        // seconde.
         private const int TickInterval = 60;
 
         private readonly string m_directory;
@@ -38,8 +40,9 @@ namespace SirCelShading
             m_reporter = reporter;
         }
 
-        // At the start of the game: the reporter, then the crash report of the
-        // previous session if it never ended. Null if even that fails.
+        // Au démarrage du jeu : le rapporteur, puis le rapport de plantage de la
+        // session précédente si elle ne s'est jamais terminée. Nul si même cela
+        // échoue.
         public static ErrorReporting Start(string directory, string pluginId)
         {
             try
@@ -57,19 +60,19 @@ namespace SirCelShading
                 if (crash != null)
                 {
                     reporter.Enqueue(crash);
-                    MyLog.Default.WriteLine("[" + pluginId + "] the previous game session did not end cleanly: crash report queued");
+                    MyLog.Default.WriteLine("[" + pluginId + "] la session de jeu précédente ne s'est pas terminée proprement : rapport de plantage mis en file");
                 }
                 return reporting;
             }
             catch (Exception e)
             {
-                try { MyLog.Default.WriteLine("[" + pluginId + "] error reports unavailable: " + e.Message); }
+                try { MyLog.Default.WriteLine("[" + pluginId + "] rapports d'erreurs indisponibles : " + e.Message); }
                 catch (Exception) { }
                 return null;
             }
         }
 
-        // Main thread, every update.
+        // Fil principal, à chaque mise à jour.
         public void Update()
         {
             if (++m_counter < TickInterval)
@@ -86,8 +89,8 @@ namespace SirCelShading
             }
         }
 
-        // The clean exit of the game: the reports wait on disk, the marker
-        // goes.
+        // La sortie propre du jeu : les rapports attendent sur le disque, la
+        // marque disparaît.
         public void End()
         {
             try { m_reporter.Persist(); }
@@ -127,9 +130,9 @@ namespace SirCelShading
                 session.Name);
         }
 
-        // The client of a dedicated server keeps the server item it joined in
-        // an internal class: found by its type, never by a name that could
-        // change (as Sir Holomap does).
+        // Le client d'un serveur dédié garde l'élément de serveur qu'il a rejoint
+        // dans une classe interne : trouvé par son type, jamais par un nom qui
+        // pourrait changer (comme le fait Sir Holomap).
         private static MyGameServerItem DedicatedServerOf(object game)
         {
             if (game == null)
@@ -154,7 +157,7 @@ namespace SirCelShading
             return null;
         }
 
-        // The start of the game process, in UTC: the session of the reports.
+        // Le début du processus du jeu, en UTC : la session des rapports.
         private static DateTime SessionStart()
         {
             try
@@ -191,7 +194,7 @@ namespace SirCelShading
             }
         }
 
-        // What identifies the player on this machine: never in a report.
+        // Ce qui identifie le joueur sur cette machine : jamais dans un rapport.
         private static IEnumerable<string> KnownNames()
         {
             var names = new List<string>();

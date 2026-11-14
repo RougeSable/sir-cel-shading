@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Tests of Sir Cel Shading. They cover the plugin's pure logic
-    (Source/Logic), whose sources are included here: they run without the game
-    and without Pulsar.
+    Tests de Sir Cel Shading. Ils couvrent la logique pure du greffon
+    (Source/Logic), dont les sources sont incluses ici : ils tournent sans le
+    jeu et sans Pulsar.
 
       dotnet test tests/tests.csproj
   -->
@@ -21,7 +21,7 @@
     <Compile Include="..\Source\Logic\*.cs" Link="Logic\%(Filename)%(Extension)" />
   </ItemGroup>
 
-  <!-- A game log of a session that crashed, as the game writes it. -->
+  <!-- // Un journal de jeu d'une session plantée, tel que le jeu l'écrit. -->
   <ItemGroup>
     <None Include="Data\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

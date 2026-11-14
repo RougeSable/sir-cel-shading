@@ -1,11 +1,12 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 
 namespace SirCelShading
 {
-    // The three variants of the game's final colors pass, in the order of their
-    // static fields in MyToneMapping: m_cs, m_csAlphaLuminance, m_csSkip.
+    // Les trois variantes de la passe des couleurs finales du jeu, dans l'ordre
+    // de leurs champs statiques de MyToneMapping : m_cs, m_csAlphaLuminance,
+    // m_csSkip.
     public enum ShaderVariant
     {
         Normal = 0,
@@ -13,9 +14,9 @@ namespace SirCelShading
         NoTonemapping = 2,
     }
 
-    // A macro definition, with no dependency on SharpDX: the game-side code
-    // turns it into a ShaderMacro. A null value defines the macro without a
-    // value, exactly like the game does for its flags.
+    // Une définition de macro, sans dépendance à SharpDX : le code côté jeu la
+    // transforme en ShaderMacro. Une valeur nulle définit la macro sans valeur,
+    // exactement comme le jeu le fait pour ses drapeaux.
     public struct MacroDefinition
     {
         public readonly string Name;
@@ -39,11 +40,11 @@ namespace SirCelShading
 
         public const int VariantCount = 3;
 
-        // Relative curvature threshold of the outlines: they have no setting
-        // of their own for it.
+        // Seuil de courbure relatif des contours : ils n'ont pas de réglage
+        // propre pour cela.
         public const float EdgeThreshold = 0.75f;
 
-        // What MyToneMapping.Run picks, reproduced exactly:
+        // Ce que choisit MyToneMapping.Run, reproduit à l'identique :
         // (!enableTonemapping) ? m_csSkip : (needsAlphaLuminance ? m_csAlphaLuminance : m_cs)
         public static ShaderVariant Choose(bool enableTonemapping, bool needsAlphaLuminance)
         {
@@ -57,7 +58,7 @@ namespace SirCelShading
             var a = settings.Normalized().AnimatedFilm;
             var macros = new List<MacroDefinition>
             {
-                // Same macros as the game for the same variant (MyToneMapping.Init).
+                // Les mêmes macros que le jeu pour la même variante (MyToneMapping.Init).
                 new MacroDefinition("NUMTHREADS", "8"),
             };
 
@@ -74,8 +75,8 @@ namespace SirCelShading
             return macros;
         }
 
-        // Two settings with the same signature give the same variants: no need
-        // to compile again. The on/off switch is not part of it.
+        // Deux réglages de même signature donnent les mêmes variantes : inutile
+        // de recompiler. L'interrupteur n'en fait pas partie.
         public static string Signature(Settings settings)
         {
             var parts = new List<string>();
@@ -84,27 +85,28 @@ namespace SirCelShading
             return string.Join("|", parts.ToArray());
         }
 
-        // A variant the game refused to compile or to create. The effect stops
-        // for the session: a line in the game log, a notification to the
-        // player and, through the log, an "erreur" report.
+        // Une variante que le jeu a refusé de compiler ou de créer. L'effet
+        // s'arrête pour la session : une ligne au journal du jeu, une
+        // notification au joueur et, par le journal, un rapport « erreur ».
         public static bool Refuse(SessionStop stop, string description, string how, Exception error)
         {
             if (stop == null)
                 return false;
-            return stop.Stop("variant " + description + " " + how, Texts.StopVariantRefused, error);
+            return stop.Stop("variante " + description + " " + how, Texts.StopVariantRefused, error);
         }
 
-        public const string RefusedByCompiler = "refused by the game's compiler";
-        public const string RefusedWithoutDetail = "refused by the game's compiler (details in the render log)";
-        public const string RefusedAtCreation = "refused at creation";
+        public const string RefusedByCompiler = "refusée par le compilateur du jeu";
+        public const string RefusedWithoutDetail = "refusée par le compilateur du jeu (détails dans le journal de rendu)";
+        public const string RefusedAtCreation = "refusée à la création";
 
         private static string Integer(int value)
         {
             return value.ToString(CultureInfo.InvariantCulture);
         }
 
-        // Always with a decimal point and an f suffix: the HLSL compiler knows
-        // no decimal comma, whatever the player's language.
+        // Toujours avec un point décimal et un suffixe f : le compilateur HLSL
+        // ne connaît pas la virgule décimale, quelle que soit la langue du
+        // joueur.
         private static string Float(float value)
         {
             return value.ToString("0.0###", CultureInfo.InvariantCulture) + "f";

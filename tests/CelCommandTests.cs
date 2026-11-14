@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
 using Xunit;
 
@@ -9,13 +9,19 @@ namespace SirCelShading.Tests
         [Theory]
         [InlineData("/cel", CelAction.Toggle)]
         [InlineData("  /CEL  ", CelAction.Toggle)]
+        [InlineData("/cel activer", CelAction.Enable)]
+        [InlineData("/cel couper", CelAction.Disable)]
+        [InlineData("/cel etat", CelAction.Status)]
+        [InlineData("/cel ÉTAT", CelAction.Status)]
+        [InlineData("/cel aide", CelAction.Help)]
         [InlineData("/cel on", CelAction.Enable)]
         [InlineData("/cel off", CelAction.Disable)]
         [InlineData("/cel status", CelAction.Status)]
         [InlineData("/cel STATUS", CelAction.Status)]
-        [InlineData("/cel whatever", CelAction.Unknown)]
+        [InlineData("/cel help", CelAction.Help)]
+        [InlineData("/cel nimportequoi", CelAction.Unknown)]
         [InlineData("/cellar", CelAction.None)]
-        [InlineData("hello", CelAction.None)]
+        [InlineData("bonjour", CelAction.None)]
         [InlineData("", CelAction.None)]
         [InlineData(null, CelAction.None)]
         public void Parses(string text, CelAction expected)
@@ -42,6 +48,7 @@ namespace SirCelShading.Tests
             var settings = new Settings { Enabled = true };
 
             Assert.False(CelCommand.Apply(CelAction.Status, settings));
+            Assert.False(CelCommand.Apply(CelAction.Help, settings));
 
             Assert.True(settings.Enabled);
         }
@@ -82,14 +89,24 @@ namespace SirCelShading.Tests
         [Fact]
         public void TheHelpListsEveryCommand()
         {
-            foreach (var command in new[] { "/cel on", "/cel off", "/cel status" })
+            foreach (var command in new[] { "/cel activer", "/cel couper", "/cel etat", "/cel aide" })
+            {
                 Assert.Contains(command, Texts.CommandHelp);
+                Assert.Contains(command, Texts.CommandUnknown);
+            }
             Assert.DoesNotContain("comic", Texts.CommandHelp);
             Assert.DoesNotContain("clearline", Texts.CommandHelp);
         }
 
         [Fact]
-        public void EverythingThePlayerReadsIsPlainEnglishText()
+        public void AnUnknownOptionGetsAnErrorMessageThatListsTheOptions()
+        {
+            Assert.NotEqual(Texts.CommandHelp, Texts.CommandUnknown);
+            Assert.Contains("inconnue", Texts.CommandUnknown);
+        }
+
+        [Fact]
+        public void EverythingThePlayerReadsIsInFrench()
         {
             var texts = typeof(Texts).GetFields(BindingFlags.Public | BindingFlags.Static)
                 .Where(f => f.IsLiteral && f.FieldType == typeof(string))
@@ -97,8 +114,16 @@ namespace SirCelShading.Tests
                 .ToArray();
 
             Assert.NotEmpty(texts);
+
+            // Le français accentué est permis ; l'anglais d'autrefois, non.
+            var english = new[] { "Enable", "plugin", "Defaults", "Close", "Stopped", "Haze", "Outline", "Shadow", "stopped", "steps aside" };
             foreach (var text in texts)
-                Assert.True(text.All(ch => ch < 128), "not plain ASCII: " + text);
+            {
+                Assert.False(string.IsNullOrWhiteSpace(text));
+                foreach (var word in english)
+                    Assert.DoesNotContain(word, text);
+            }
+            Assert.Equal("Activer le greffon", Texts.EnableCheckbox);
         }
 
         [Fact]
@@ -113,6 +138,7 @@ namespace SirCelShading.Tests
             {
                 Assert.DoesNotContain("comic", text, System.StringComparison.OrdinalIgnoreCase);
                 Assert.DoesNotContain("clear line", text, System.StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("ligne claire", text, System.StringComparison.OrdinalIgnoreCase);
             }
         }
     }

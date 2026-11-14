@@ -1,18 +1,18 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Xml.Serialization;
 
 namespace SirCelShading
 {
-    // Reading and writing the settings. A missing or unreadable file never
-    // blocks the game: the defaults are used instead.
+    // Lecture et écriture des réglages. Un fichier absent ou illisible ne
+    // bloque jamais le jeu : on prend les valeurs par défaut.
     public static class SettingsFile
     {
         public const string FileName = "settings.xml";
 
-        // The file written by the first version. It is read once, when
-        // settings.xml does not exist yet, so that the on/off switch of an
-        // existing player is kept.
+        // Le fichier écrit par la première version. Il est lu une fois, quand
+        // settings.xml n'existe pas encore, pour que l'interrupteur d'un joueur
+        // déjà installé soit gardé.
         public const string LegacyFileName = "reglages.xml";
 
         private static readonly XmlSerializer Serializer = new XmlSerializer(typeof(Settings));
@@ -23,9 +23,9 @@ namespace SirCelShading
             return Path.Combine(directory, FileName);
         }
 
-        // Whatever an earlier version wrote (a style, the settings of other
-        // styles), the result is the Animated film rendering: elements this
-        // version does not know are ignored.
+        // Quoi qu'une version antérieure ait écrit (un style, les réglages
+        // d'autres styles), le résultat est le rendu film d'animation : les
+        // éléments que cette version ne connaît pas sont ignorés.
         public static Settings Load(string directory, out string problem)
         {
             problem = null;
@@ -50,7 +50,7 @@ namespace SirCelShading
                     var read = serializer.Deserialize(stream);
                     if (read == null)
                     {
-                        problem = "empty settings file " + path;
+                        problem = "fichier de réglages vide " + path;
                         return new Settings();
                     }
                     return convert(read);
@@ -58,7 +58,7 @@ namespace SirCelShading
             }
             catch (Exception e)
             {
-                problem = "unreadable settings file " + path + " (" + e.Message + ")";
+                problem = "fichier de réglages illisible " + path + " (" + e.Message + ")";
                 return new Settings();
             }
         }
@@ -68,8 +68,8 @@ namespace SirCelShading
             Directory.CreateDirectory(directory);
             var path = PathIn(directory);
 
-            // Written next to the file, then swapped in: a crash of the game
-            // never leaves a half-written settings file.
+            // Écrit à côté du fichier, puis mis à sa place : un plantage du jeu ne
+            // laisse jamais un fichier de réglages à moitié écrit.
             var temporary = path + ".tmp";
             using (var stream = File.Create(temporary))
                 Serializer.Serialize(stream, settings.Normalized());

@@ -1,33 +1,37 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
 namespace SirCelShading
 {
-    // Gathers the plugin's errors of this game session into "erreur" reports.
+    // Rassemble les erreurs du greffon pour cette session de jeu en rapports
+    // « erreur ».
     //
-    // Every caught exception and every error line the plugin writes to the
-    // game log comes here. The same error (same message, same top of stack)
-    // gives one report per session, with how many times it happened and
-    // when it was first and last seen.
+    // Chaque exception rattrapée et chaque ligne d'erreur que le greffon écrit
+    // au journal du jeu arrive ici. La même erreur (même message, même haut de
+    // pile) donne un seul rapport par session, avec le nombre de fois où elle
+    // s'est produite et les dates de la première et de la dernière.
     //
-    // Recording is quick and touches no file: it may happen on the render
-    // thread. Tick, on the main thread, writes the reports to the queue and
-    // sends what is ready while the player is on one of our servers. An
-    // error waits SettleDelay before leaving, so that its repetitions are
-    // counted; once sent, it is only counted, never sent again this session.
+    // L'enregistrement est rapide et ne touche aucun fichier : il peut avoir
+    // lieu sur le fil de rendu. Tick, sur le fil principal, écrit les rapports
+    // dans la file et envoie ce qui est prêt tant que le joueur est sur l'un de
+    // nos serveurs. Une erreur attend SettleDelay avant de partir, pour que ses
+    // répétitions soient comptées ; une fois envoyée, elle n'est plus que
+    // comptée, jamais renvoyée pendant cette session.
     public sealed class ErrorReporter
     {
         public static readonly TimeSpan SettleDelay = TimeSpan.FromSeconds(30);
 
-        // The plugin's last log lines, joined to each report as context.
+        // Les dernières lignes de journal du greffon, jointes à chaque rapport
+        // comme contexte.
         public const int ContextLines = 20;
 
-        // Distinct errors kept per session: beyond, new ones are dropped.
+        // Erreurs distinctes gardées par session : au-delà, les nouvelles sont
+        // abandonnées.
         public const int MaxErrors = 100;
 
-        public const string MessageRemoved = "(line removed: it carried player data)";
+        public const string MessageRemoved = "(ligne retirée : elle portait des données du joueur)";
 
         private sealed class Entry
         {
@@ -81,8 +85,8 @@ namespace SirCelShading
             get { return m_session; }
         }
 
-        // A line the plugin wrote to the game log: kept, scrubbed, as context
-        // for the next reports.
+        // Une ligne que le greffon a écrite au journal du jeu : gardée, nettoyée,
+        // comme contexte des rapports suivants.
         public void Remember(string line)
         {
             try
@@ -105,13 +109,13 @@ namespace SirCelShading
             }
         }
 
-        // An error line written to the game log, with no exception.
+        // Une ligne d'erreur écrite au journal du jeu, sans exception.
         public void Record(string message)
         {
             Record(message, (string)null);
         }
 
-        // A caught exception, with what the plugin was doing.
+        // Une exception rattrapée, avec ce que faisait le greffon.
         public void Record(string context, Exception error)
         {
             if (error == null)
@@ -125,7 +129,8 @@ namespace SirCelShading
             Record(message, stack);
         }
 
-        // Never throws: a fault here must not add to the one being reported.
+        // Ne lève jamais d'exception : une faute ici ne doit pas s'ajouter à celle
+        // qu'on rapporte.
         public void Record(string message, string stack)
         {
             try
@@ -172,8 +177,8 @@ namespace SirCelShading
             }
         }
 
-        // A report made elsewhere (the crash of the previous session), put
-        // straight in the queue.
+        // Un rapport fabriqué ailleurs (le plantage de la session précédente),
+        // mis directement dans la file.
         public bool Enqueue(ErrorReport report)
         {
             try
@@ -188,7 +193,7 @@ namespace SirCelShading
             }
         }
 
-        // The reports of this session that are not sent yet, as they stand.
+        // Les rapports de cette session pas encore envoyés, tels qu'ils sont.
         public List<ErrorReport> Pending()
         {
             var reports = new List<ErrorReport>();
@@ -203,9 +208,10 @@ namespace SirCelShading
             return reports;
         }
 
-        // Main thread, about once a second: writes the changed reports to the
-        // queue, then sends what is ready if the player is on one of our
-        // servers. Returns how many reports left. Never throws.
+        // Fil principal, environ une fois par seconde : écrit les rapports
+        // modifiés dans la file, puis envoie ce qui est prêt si le joueur est sur
+        // l'un de nos serveurs. Rend le nombre de rapports partis. Ne lève jamais
+        // d'exception.
         public int Tick(bool onOurServer, Func<byte[], bool> send)
         {
             try
@@ -235,8 +241,8 @@ namespace SirCelShading
             }
         }
 
-        // Writes every changed report to the queue: on each tick, and at the
-        // clean exit of the game. Never throws.
+        // Écrit chaque rapport modifié dans la file : à chaque tour, et à la
+        // sortie propre du jeu. Ne lève jamais d'exception.
         public void Persist()
         {
             try
@@ -271,8 +277,8 @@ namespace SirCelShading
             }
         }
 
-        // Reports of earlier sessions leave at once; those of this session
-        // once SettleDelay has passed since their first occurrence.
+        // Les rapports des sessions précédentes partent aussitôt ; ceux de cette
+        // session quand SettleDelay est écoulé depuis leur première occurrence.
         private bool Ready(string name)
         {
             if (!name.StartsWith(m_sessionPrefix, StringComparison.Ordinal))
@@ -303,8 +309,8 @@ namespace SirCelShading
             };
         }
 
-        // "context: Type: message" for the message, the rest of the
-        // exception (inner exceptions, frames) for the stack.
+        // « contexte : Type : message » pour le message, le reste de
+        // l'exception (exceptions internes, cadres) pour la pile.
         public static void Describe(string context, Exception error, out string message, out string stack)
         {
             var lines = ReportScrubber.SplitLines(error.ToString());
@@ -323,8 +329,8 @@ namespace SirCelShading
             stack = rest.ToString();
         }
 
-        // The first frame of a stack: what tells two errors with the same
-        // message apart.
+        // Le premier cadre d'une pile : ce qui distingue deux erreurs de même
+        // message.
         public static string TopOfStack(string stack)
         {
             string first = null;
@@ -357,8 +363,8 @@ namespace SirCelShading
             return "";
         }
 
-        // FNV-1a 64: the same everywhere and from one launch to the next
-        // (string.GetHashCode is not).
+        // FNV-1a 64 : le même partout et d'un lancement à l'autre
+        // (string.GetHashCode ne l'est pas).
         public static string Hash(string text)
         {
             unchecked

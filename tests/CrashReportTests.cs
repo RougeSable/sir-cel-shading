@@ -1,12 +1,13 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using Xunit;
 
 namespace SirCelShading.Tests
 {
-    // The "plantage" report: a marker left by a session that never ended,
-    // and the game log of that session read again at the next start.
+    // Le rapport « plantage » : une marque laissée par une session qui ne s'est
+    // jamais terminée, et le journal de jeu de cette session relu au démarrage
+    // suivant.
     public class CrashReportTests : IDisposable
     {
         private readonly ReportTestKit m_kit = new ReportTestKit();
@@ -16,8 +17,8 @@ namespace SirCelShading.Tests
             m_kit.Dispose();
         }
 
-        // The game's folder (%AppData%\SpaceEngineers) with the log of the
-        // crashed session and the log the game just opened.
+        // Le dossier du jeu (%AppData%\SpaceEngineers) avec le journal de la
+        // session plantée et celui que le jeu vient d'ouvrir.
         private string GameFolder(out string previousLog, out string currentLog)
         {
             var folder = Path.Combine(m_kit.Root, "SpaceEngineers");
@@ -35,17 +36,17 @@ namespace SirCelShading.Tests
             string previousLog, currentLog;
             var folder = GameFolder(out previousLog, out currentLog);
 
-            // The crashed session put its marker and never removed it.
+            // La session plantée a posé sa marque et ne l'a jamais retirée.
             Assert.Null(CrashWatch.Begin(m_kit.PluginDirectory, ReportTestKit.SessionStart, previousLog));
             Assert.True(CrashWatch.HasMarker(m_kit.PluginDirectory));
 
-            // Next start.
+            // Démarrage suivant.
             var start = new DateTime(2026, 10, 27, 20, 15, 40, 118, DateTimeKind.Utc);
             var crash = CrashWatch.Start(m_kit.PluginDirectory, folder, currentLog, start,
                 ReportTestKit.Plugin, ReportTestKit.Version, ReportTestKit.PluginTag, ReportTestKit.Scrubber());
 
             Assert.NotNull(crash);
-            Assert.True(CrashWatch.HasMarker(m_kit.PluginDirectory)); // this session's marker
+            Assert.True(CrashWatch.HasMarker(m_kit.PluginDirectory)); // la marque de cette session
 
             var reporter = m_kit.Reporter(start);
             Assert.True(reporter.Enqueue(crash));
@@ -55,24 +56,24 @@ namespace SirCelShading.Tests
             Assert.Equal("Sir Cel Shading", report.GetProperty("greffon").GetString());
             Assert.Equal(1, report.GetProperty("nombre").GetInt32());
 
-            // The session that crashed, and the time of the crash in UTC (the
-            // log is in local time, one hour ahead).
+            // La session qui a planté, et l'heure du plantage en UTC (le journal
+            // est en heure locale, une heure d'avance).
             Assert.Equal(ReportTestKit.SessionStart, ReportTestKit.Utc(report, "session"));
             Assert.Equal(new DateTime(2026, 10, 27, 19, 31, 59, 823, DateTimeKind.Utc), ReportTestKit.Utc(report, "premiere"));
             Assert.Equal(ReportTestKit.Utc(report, "premiere"), ReportTestKit.Utc(report, "derniere"));
 
-            // The exception that brought the game down, and its stack.
+            // L'exception qui a fait tomber le jeu, et sa pile.
             var message = report.GetProperty("message").GetString();
             Assert.StartsWith("Exception occurred: SharpDX.SharpDXException: HRESULT: [0x887A0005]", message);
             Assert.Contains("DXGI_ERROR_DEVICE_REMOVED", message);
             var stack = report.GetProperty("pile").GetString().Split('\n');
-            Assert.Equal("   at SharpDX.Result.CheckError()", stack[0]);
-            Assert.Contains("   at VRageRender.MyRender11.Present()", stack);
+            Assert.Equal(ReportTestKit.Frame("SharpDX.Result.CheckError()"), stack[0]);
+            Assert.Contains(ReportTestKit.Frame("VRageRender.MyRender11.Present()"), stack);
             Assert.Contains(stack, l => l.Contains(@"%USERPROFILE%\source\repos\VRage\MyRenderThread.cs:line 412"));
 
             var lines = ReportTestKit.LinesOf(report);
 
-            // The CRASH INFO block, whole.
+            // Le bloc CRASH INFO, entier.
             var info = lines.IndexOf(CrashWatch.CrashInfoHeading);
             var errors = lines.IndexOf(CrashWatch.GameErrorsHeading);
             var plugin = lines.IndexOf(CrashWatch.PluginLinesHeading);
@@ -83,23 +84,24 @@ namespace SirCelShading.Tests
             Assert.Contains(block, l => l.EndsWith("IsGPU: True"));
             Assert.Contains(block, l => l.EndsWith("AppVersion: 1.206.32"));
 
-            // The last 20 error lines of the game before the end.
+            // Les 20 dernières lignes d'erreur du jeu avant la fin.
             var gameErrors = lines.Skip(errors + 1).Take(plugin - errors - 1).ToList();
             Assert.Equal(CrashWatch.LastLines, gameErrors.Count);
             Assert.Contains("Exception occurred: SharpDX.SharpDXException", gameErrors.Last());
             Assert.Contains(gameErrors, l => l.Contains("helmet_11.mwm"));
             Assert.Contains(gameErrors, l => l.Contains("device lost"));
-            Assert.DoesNotContain(gameErrors, l => l.Contains("heavy_armor_ng.dds")); // older than the last 20
+            Assert.DoesNotContain(gameErrors, l => l.Contains("heavy_armor_ng.dds")); // plus ancienne que les 20 dernières
             Assert.DoesNotContain(gameErrors, l => l.Contains("[sir-cel-shading]"));
 
-            // The last 20 lines of the plugin.
+            // Les 20 dernières lignes du greffon.
             var pluginLines = lines.Skip(plugin + 1).ToList();
             Assert.Equal(CrashWatch.LastLines, pluginLines.Count);
             Assert.All(pluginLines, l => Assert.Contains("[sir-cel-shading] ", l));
             Assert.Contains("frame check 23:", pluginLines.Last());
             Assert.DoesNotContain(pluginLines, l => l.Contains("loaded, Animated film"));
 
-            // Read once: the next start, after a clean exit, reports nothing.
+            // Lu une seule fois : le démarrage suivant, après une sortie propre, ne
+            // rapporte rien.
             CrashWatch.End(m_kit.PluginDirectory);
             Assert.Null(CrashWatch.Start(m_kit.PluginDirectory, folder, currentLog, start.AddHours(1),
                 ReportTestKit.Plugin, ReportTestKit.Version, ReportTestKit.PluginTag, ReportTestKit.Scrubber()));
@@ -111,18 +113,19 @@ namespace SirCelShading.Tests
             string previousLog, currentLog;
             var folder = GameFolder(out previousLog, out currentLog);
 
-            // A session that starts...
+            // Une session qui démarre...
             Assert.Null(CrashWatch.Start(m_kit.PluginDirectory, folder, previousLog, ReportTestKit.SessionStart,
                 ReportTestKit.Plugin, ReportTestKit.Version, ReportTestKit.PluginTag, ReportTestKit.Scrubber()));
             Assert.True(CrashWatch.HasMarker(m_kit.PluginDirectory));
 
-            // ... and ends cleanly.
+            // ... et se termine proprement.
             CrashWatch.End(m_kit.PluginDirectory);
             Assert.False(CrashWatch.HasMarker(m_kit.PluginDirectory));
             Assert.Empty(Directory.GetFiles(m_kit.PluginDirectory));
 
-            // The next start finds no marker: no crash report, even though
-            // the previous game log holds a CRASH INFO block.
+            // Le démarrage suivant ne trouve aucune marque : pas de rapport de
+            // plantage, même si le journal de jeu précédent contient un bloc
+            // CRASH INFO.
             var reporter = m_kit.Reporter(ReportTestKit.SessionStart.AddHours(1));
             var crash = CrashWatch.Start(m_kit.PluginDirectory, folder, currentLog, ReportTestKit.SessionStart.AddHours(1),
                 ReportTestKit.Plugin, ReportTestKit.Version, ReportTestKit.PluginTag, ReportTestKit.Scrubber());
@@ -130,7 +133,7 @@ namespace SirCelShading.Tests
             reporter.Tick(true, b => true);
             Assert.Empty(m_kit.Queue().Names());
 
-            // Ending twice, or without a marker, is harmless.
+            // Terminer deux fois, ou sans marque, est sans danger.
             CrashWatch.End(m_kit.PluginDirectory);
             CrashWatch.End(m_kit.PluginDirectory);
             Assert.False(CrashWatch.HasMarker(m_kit.PluginDirectory));

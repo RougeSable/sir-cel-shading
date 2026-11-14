@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,15 +7,16 @@ using System.Text.Json;
 
 namespace SirCelShading.Tests
 {
-    // What the report tests share: a temporary folder, a clock the test
-    // moves, the game log of a crashed session, and reading reports back.
+    // Ce que les tests de rapports partagent : un dossier temporaire, une
+    // horloge que le test fait avancer, le journal de jeu d'une session plantée,
+    // et la relecture des rapports.
     internal sealed class ReportTestKit : IDisposable
     {
         public const string Plugin = "Sir Cel Shading";
         public const string Version = "1.2.0.0";
         public const string PluginTag = "sir-cel-shading";
 
-        // The player of the game log in Data: never in a report.
+        // Le joueur du journal de jeu de Data : jamais dans un rapport.
         public const string SteamId = "76561198034125587";
         public const string PlayerName = "Kestrel_Fr";
         public const string GridName = "Kestrel Hauler Mk2";
@@ -46,7 +47,7 @@ namespace SirCelShading.Tests
 
         public static ReportScrubber Scrubber()
         {
-            // What the plugin learns on the player's machine.
+            // Ce que le greffon apprend sur la machine du joueur.
             return new ReportScrubber(UserProfile, new[] { WindowsUser, PlayerName, SteamId });
         }
 
@@ -83,6 +84,13 @@ namespace SirCelShading.Tests
             var text = report.GetProperty(field).GetString();
             return DateTime.Parse(text, System.Globalization.CultureInfo.InvariantCulture,
                 System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal);
+        }
+
+        // Une ligne de pile d'appels, comme .NET l'écrit : trois espaces, « at »,
+        // puis l'appel.
+        public static string Frame(string call)
+        {
+            return "   at " + call;
         }
 
         public static Exception Thrown(string message)

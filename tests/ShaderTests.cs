@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -18,8 +18,8 @@ namespace SirCelShading.Tests
         [Fact]
         public void NoSlotOfTheGamePassIsDeclaredAgain()
         {
-            // The game's pass binds t0 to t3, u0 and s0: our variant declares
-            // no other slot than t31 and t27.
+            // La passe du jeu lie t0 à t3, u0 et s0 : notre variante ne déclare
+            // aucun autre emplacement que t31 et t27.
             var slots = Regex.Matches(ShaderSource.Text, @"register\s*\(\s*(\w+)\s*\)")
                 .Cast<Match>().Select(m => m.Groups[1].Value).OrderBy(s => s).ToArray();
             Assert.Equal(new[] { "t27", "t31" }, slots);
@@ -28,8 +28,8 @@ namespace SirCelShading.Tests
         [Fact]
         public void GameHeadersAreIncludedBetweenAngleBrackets()
         {
-            // Between quotes, the game's compiler would look for them next to
-            // our file, in the player's folder, and fail.
+            // Entre guillemets, le compilateur du jeu les chercherait à côté de
+            // notre fichier, dans le dossier du joueur, et échouerait.
             foreach (var header in ShaderSource.GameHeaders)
                 Assert.Contains("#include <" + header + ">", ShaderSource.Text);
             Assert.DoesNotContain("#include \"", ShaderSource.Text);
@@ -64,7 +64,8 @@ namespace SirCelShading.Tests
         [Fact]
         public void TheAnimatedFilmRenderingKeepsItsParts()
         {
-            // Soft shadow tones, darker outlines, rim light, distance haze.
+            // Tons d'ombre doux, contours plus sombres, lumière de contour, brume de
+            // distance.
             Assert.Contains("CelRelight(color, albedo, lighting, CelShadeBands(lighting))", ShaderSource.Text);
             Assert.Contains("color = lerp(color, CelInk(color), CelOutline(texel) * CEL_STRENGTH);", ShaderSource.Text);
             Assert.Contains("color = CelRimLight(color, p, last, dist, uv);", ShaderSource.Text);
@@ -80,7 +81,7 @@ namespace SirCelShading.Tests
         [Fact]
         public void EveryPreprocessorBlockIsClosed()
         {
-            var opened = Regex.Matches(ShaderSource.Text, @"^\s*#\s*if(n?def)?\b", RegexOptions.Multiline).Count;
+            var opened = Regex.Matches(ShaderSource.Text, @"^\s*#\s*i[f](n?def)?\b", RegexOptions.Multiline).Count;
             var closed = Regex.Matches(ShaderSource.Text, @"^\s*#\s*endif\b", RegexOptions.Multiline).Count;
             Assert.Equal(opened, closed);
         }
@@ -140,7 +141,7 @@ namespace SirCelShading.Tests
             Assert.Equal("0.75f", macros["CEL_THRESHOLD"]);
             Assert.Equal("0.2f", macros["CEL_RIM"]);
             Assert.Equal("0.6f", macros["CEL_HAZE"]);
-            Assert.Equal(5, macros.Count - 1); // the five macros of the rendering, plus NUMTHREADS
+            Assert.Equal(5, macros.Count - 1); // les cinq macros du rendu, plus NUMTHREADS
         }
 
         [Fact]

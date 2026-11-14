@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using HarmonyLib;
 using Sandbox.Graphics.GUI;
@@ -10,20 +10,21 @@ using VRageRender;
 
 namespace SirCelShading
 {
-    // Sir Cel Shading, a client-side plugin loaded by Pulsar. It only does cel
-    // shading, in the Animated film style, on the player's machine: a player
-    // without the plugin sees the game's rendering. Its only exchange with a
-    // server is its error and crash reports, on the studio's servers only
-    // (ErrorReporting).
+    // Sir Cel Shading, un greffon côté joueur chargé par Pulsar. Il ne fait que
+    // du cel shading, dans le style film d'animation, sur la machine du joueur :
+    // un joueur sans le greffon voit le rendu du jeu. Son seul échange avec un
+    // serveur est l'envoi de ses rapports d'erreurs et de plantages, sur les
+    // serveurs du studio seulement (ErrorReporting).
     public class SirCelShadingPlugin : IPlugin
     {
         public const string Id = "sir-cel-shading";
 
-        // How many updates between two checks that no other plugin hooked the
-        // final colors after us (60 per second).
+        // Nombre de mises à jour entre deux vérifications qu'aucun autre greffon ne
+        // s'est accroché aux couleurs finales après nous (60 par seconde).
         private const int CoexistenceInterval = 600;
 
-        // The plugin's lines in the game log; error lines also give reports.
+        // Les lignes du greffon dans le journal du jeu ; les lignes d'erreur
+        // donnent aussi des rapports.
         private static readonly PluginLog s_log = new PluginLog(Id, line => MyLog.Default.WriteLine(line), null);
 
         private Harmony m_harmony;
@@ -52,7 +53,8 @@ namespace SirCelShading
             s_log.Info(text);
         }
 
-        // An error line in the game log, which also gives an error report.
+        // Une ligne d'erreur dans le journal du jeu, qui donne aussi un rapport
+        // d'erreur.
         public static void LogError(string text, Exception error = null)
         {
             s_log.Error(text, error);
@@ -62,11 +64,11 @@ namespace SirCelShading
         {
             Instance = this;
 
-            // The player's settings folder: %AppData%\SpaceEngineers\Storage\sir-cel-shading
+            // Le dossier de réglages du joueur : %AppData%\SpaceEngineers\Storage\sir-cel-shading
             m_settingsDirectory = Path.Combine(MyFileSystem.UserDataPath, "Storage", Id);
 
-            // First of all: the errors of what follows are reported, and the
-            // crash of the previous session, if any, is queued.
+            // D'abord : les erreurs de ce qui suit sont rapportées, et le plantage
+            // de la session précédente, s'il y en a un, est mis en file.
             m_reporting = ErrorReporting.Start(m_settingsDirectory, Id);
             s_log.Reporter = m_reporting == null ? null : m_reporting.Reporter;
 
@@ -76,10 +78,10 @@ namespace SirCelShading
             string problem;
             FinalColorsPass.CurrentSettings = SettingsFile.Load(m_settingsDirectory, out problem);
             if (problem != null)
-                LogError(problem + "; using the defaults");
+                LogError(problem + " ; valeurs par défaut utilisées");
 
             var settings = FinalColorsPass.CurrentSettings;
-            Log("loaded, Animated film, " + (settings.Enabled ? "on" : "off"));
+            Log(Texts.DisplayName + " chargé, film d'animation, " + (settings.Enabled ? "activé" : "désactivé"));
 
             try
             {
@@ -87,7 +89,7 @@ namespace SirCelShading
             }
             catch (Exception e)
             {
-                m_stop.Stop("preparation failed", Texts.StopPatch, e);
+                m_stop.Stop("préparation échouée", Texts.StopPatch, e);
             }
         }
 
@@ -97,7 +99,7 @@ namespace SirCelShading
             m_engine = RenderEngine.Resolve(out missing);
             if (m_engine == null)
             {
-                m_stop.Stop("unexpected render engine, not found: " + missing, Texts.StopUnexpectedEngine);
+                m_stop.Stop("moteur de rendu inattendu, introuvable : " + missing, Texts.StopUnexpectedEngine);
                 return;
             }
             FinalColorsPass.Engine = m_engine;
@@ -105,7 +107,7 @@ namespace SirCelShading
             var header = FinalColorsPass.MissingHeader(MyShaderCompiler.ShadersPath);
             if (header != null)
             {
-                m_stop.Stop("game header not found: " + header + " in " + MyShaderCompiler.ShadersPath,
+                m_stop.Stop("en-tête du jeu introuvable : " + header + " dans " + MyShaderCompiler.ShadersPath,
                     Texts.StopMissingHeader);
                 return;
             }
@@ -117,12 +119,12 @@ namespace SirCelShading
             }
             catch (Exception e)
             {
-                m_stop.Stop("could not write " + shaderPath, Texts.StopShaderFile, e);
+                m_stop.Stop("écriture impossible de " + shaderPath, Texts.StopShaderFile, e);
                 return;
             }
             FinalColorsPass.ShaderPath = shaderPath;
 
-            // Two plugins never fight over the same step of the game.
+            // Deux greffons ne se disputent jamais une même étape du jeu.
             if (StepAsideIfTaken())
                 return;
 
@@ -133,8 +135,8 @@ namespace SirCelShading
                 postfix: new HarmonyMethod(pass.GetMethod("Postfix")),
                 finalizer: new HarmonyMethod(pass.GetMethod("Finalizer")));
             m_patched = true;
-            Log("hooked on MyToneMapping.Run, depth in t" + ShaderSource.DepthSlot
-                + ", albedo in t" + ShaderSource.AlbedoSlot + ", shader written to " + shaderPath);
+            Log("accroché à MyToneMapping.Run, profondeur en t" + ShaderSource.DepthSlot
+                + ", albédo en t" + ShaderSource.AlbedoSlot + ", shader écrit dans " + shaderPath);
         }
 
         private static void WriteShader(string path)
@@ -146,10 +148,10 @@ namespace SirCelShading
             File.WriteAllText(path, text);
         }
 
-        // True if another plugin is hooked on the final colors: the effect then
-        // stops for the session, and our patch, if placed,
-        // stays inert (removing it while the render thread runs it could leave
-        // a game field replaced).
+        // Vrai si un autre greffon est accroché aux couleurs finales : l'effet
+        // s'arrête alors pour la session, et notre correctif, s'il est posé,
+        // reste inerte (le retirer pendant que le fil de rendu l'exécute pourrait
+        // laisser un champ du jeu remplacé).
         private bool StepAsideIfTaken()
         {
             var info = Harmony.GetPatchInfo(m_engine.Run);
@@ -158,7 +160,7 @@ namespace SirCelShading
                 return false;
 
             var names = string.Join(", ", others.ToArray());
-            m_stop.Stop("MyToneMapping.Run is already patched by " + names + ": stepping aside",
+            m_stop.Stop("MyToneMapping.Run est déjà modifié par " + names + " : on cède la place",
                 string.Format(Texts.StopCoexistence, names));
             return true;
         }
@@ -185,11 +187,11 @@ namespace SirCelShading
             }
             catch (Exception e)
             {
-                // A failure here must never bring the game down. Already
-                // stopped: the log is not repeated every frame, but the
-                // fault is still counted in its report.
-                if (!m_stop.Stop("fault on the main thread", Texts.StopFault, e) && s_log.Reporter != null)
-                    s_log.Reporter.Record("fault on the main thread", e);
+                // Une défaillance ici ne doit jamais faire tomber le jeu. Déjà
+                // arrêté : le journal n'est pas répété à chaque image, mais la
+                // faute reste comptée dans son rapport.
+                if (!m_stop.Stop("faute sur le fil principal", Texts.StopFault, e) && s_log.Reporter != null)
+                    s_log.Reporter.Record("faute sur le fil principal", e);
             }
 
             if (m_reporting != null)
@@ -208,11 +210,16 @@ namespace SirCelShading
             if (action == CelAction.None)
                 return;
 
-            // The command stays on the player's machine.
+            // La commande reste sur la machine du joueur.
             sendToOthers = false;
 
             var settings = Settings;
             if (action == CelAction.Unknown)
+            {
+                m_stop.Inform(Texts.CommandUnknown);
+                return;
+            }
+            if (action == CelAction.Help)
             {
                 m_stop.Inform(Texts.CommandHelp);
                 return;
@@ -224,9 +231,9 @@ namespace SirCelShading
             m_stop.Inform(Texts.Status(settings.Enabled, m_stop.Reason));
         }
 
-        // Taken into account at once, without restarting the game: the next
-        // frame is drawn with the new settings, which are saved for the next
-        // games.
+        // Pris en compte aussitôt, sans relancer le jeu : l'image suivante est
+        // dessinée avec les nouveaux réglages, qui sont enregistrés pour les
+        // prochaines parties.
         public void Apply(Settings settings)
         {
             FinalColorsPass.CurrentSettings = settings;
@@ -236,11 +243,11 @@ namespace SirCelShading
             }
             catch (Exception e)
             {
-                LogError("settings not saved", e);
+                LogError("réglages non enregistrés", e);
             }
         }
 
-        // Called by Pulsar, the plugin's settings button.
+        // Appelée par Pulsar, le bouton de réglages du greffon.
         public void OpenConfigDialog()
         {
             MyGuiSandbox.AddScreen(new SettingsScreen(this));
@@ -254,17 +261,17 @@ namespace SirCelShading
                     MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
                 m_commandHooked = false;
 
-                // Only our patches, never anyone else's.
+                // Seulement nos correctifs, jamais ceux d'un autre.
                 if (m_harmony != null)
                     m_harmony.UnpatchAll(Id);
             }
             catch (Exception e)
             {
-                LogError("incomplete shutdown", e);
+                LogError("arrêt incomplet", e);
             }
 
-            // The clean exit: the reports wait on disk for the next
-            // connection to our servers, and no crash will be reported.
+            // La sortie propre : les rapports attendent sur le disque la prochaine
+            // connexion à nos serveurs, et aucun plantage ne sera rapporté.
             if (m_reporting != null)
                 m_reporting.End();
             Instance = null;

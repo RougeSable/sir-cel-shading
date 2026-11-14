@@ -1,27 +1,27 @@
-using System;
+﻿using System;
 
 namespace SirCelShading
 {
-    // Where the reports go: the channel shared by every client-side plugin
-    // of the studio, and the servers that listen to it.
+    // Où vont les rapports : le canal commun à tous les greffons côté joueur
+    // du studio, et les serveurs qui l'écoutent.
     public static class ReportChannel
     {
-        // The number fixed by the rule of the studio's client-side plugins.
+        // Le numéro fixé par la règle des greffons côté joueur du studio.
         public const long Number = 5465479001L;
 
-        // The game's network messages (MyAPIGateway.Multiplayer) take a
-        // 16-bit channel: 5465479001 does not fit. The game would keep its
-        // low 16 bits, so that is what is sent, written out here so that the
-        // server's listener and every plugin agree on it: 38745.
+        // Les messages réseau du jeu (MyAPIGateway.Multiplayer) prennent un
+        // canal sur 16 bits : 5465479001 n'y tient pas. Le jeu en garderait les
+        // 16 bits de poids faible, et c'est donc ce qu'on envoie, écrit ici
+        // pour que l'écouteur du serveur et chaque greffon s'accordent : 38745.
         public static readonly ushort GameChannel = unchecked((ushort)(Number & 0xFFFF));
 
-        // The studio's servers, PU and PTU, all carry this word in their
-        // name, which the game shows in its server list.
+        // Les serveurs du studio, PU et PTU, portent tous ce mot dans leur
+        // nom, que le jeu montre dans sa liste de serveurs.
         public const string ServerMark = "Sirius";
 
-        // True on a dedicated server of the studio, joined as a client.
-        // Single player, a hosted game or anyone else's server: false, and
-        // nothing leaves the player's machine.
+        // Vrai sur un serveur dédié du studio, rejoint en client. Solo, partie
+        // hébergée ou serveur d'un autre : faux, et rien ne quitte la machine
+        // du joueur.
         public static bool IsOurServer(bool multiplayer, bool isServer, bool dedicated, string serverName, string worldName)
         {
             if (!multiplayer || isServer || !dedicated)

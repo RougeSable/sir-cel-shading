@@ -20,9 +20,9 @@ namespace SirCelShading.Tests
         public void AnotherOwnerIsReportedOnce()
         {
             var others = Coexistence.OtherOwners(
-                new[] { "sir-cel-shading", "other.plugin", "other.plugin", "", null }, "sir-cel-shading");
+                new[] { "sir-cel-shading", "autre.greffon", "autre.greffon", "", null }, "sir-cel-shading");
 
-            Assert.Equal(new[] { "other.plugin" }, others);
+            Assert.Equal(new[] { "autre.greffon" }, others);
         }
     }
 }

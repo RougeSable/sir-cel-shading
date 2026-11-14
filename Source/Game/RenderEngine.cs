@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -7,13 +7,12 @@ using VRageRender;
 
 namespace SirCelShading
 {
-    // Everything the plugin uses from the client's render engine
-    // (VRage.Render11), resolved by reflection once and for all. A single
-    // missing name, or an unexpected shape, and Resolve returns null with the
-    // name at fault: the effect stops for the session without touching
-    // anything.
+    // Tout ce que le greffon utilise du moteur de rendu du client
+    // (VRage.Render11), résolu par réflexion une fois pour toutes. Un seul nom
+    // absent, ou une forme inattendue, et Resolve rend nul avec le nom fautif :
+    // l'effet s'arrête pour la session sans rien toucher.
     //
-    // Names taken from the decompiled jeu-installe/Bin64/VRage.Render11.dll.
+    // Noms pris dans jeu-installe/Bin64/VRage.Render11.dll décompilé.
     internal sealed class RenderEngine
     {
         private const BindingFlags Static = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
@@ -29,7 +28,7 @@ namespace SirCelShading
         public Type IdType;
 
         // MyShaderCompiler.Compile(string, ShaderMacro[], MyShaderProfile, string, bool): byte[]
-        // Returns null when the shader is refused, without crashing.
+        // Rend nul quand le shader est refusé, sans planter.
         public MethodInfo Compile;
 
         // MyComputeShaders.Create(string, ShaderMacro[]): MyComputeShaders.Id
@@ -45,8 +44,9 @@ namespace SirCelShading
         public PropertyInfo ResolvedDepth;
         public PropertyInfo DepthView;
 
-        // MyGBuffer.Main.GBuffer0 (albedo) and MyGBuffer.SamplesCount: with
-        // multisampling, GBuffer0 is not a plain texture and is not bound.
+        // MyGBuffer.Main.GBuffer0 (albédo) et MyGBuffer.SamplesCount : avec le
+        // multi-échantillonnage, GBuffer0 n'est pas une texture simple et n'est
+        // pas liée.
         public PropertyInfo Albedo;
         public PropertyInfo SamplesCount;
 
@@ -84,7 +84,7 @@ namespace SirCelShading
             var computeShaders = render.GetType("VRageRender.MyComputeShaders");
             r.IdType = render.GetType("VRageRender.MyComputeShaders+Id");
             if (computeShaders == null || r.IdType == null) { missing = "VRageRender.MyComputeShaders.Id"; return null; }
-            if (r.Fields.Any(f => f.FieldType != r.IdType)) { missing = "MyToneMapping.m_cs of type MyComputeShaders.Id"; return null; }
+            if (r.Fields.Any(f => f.FieldType != r.IdType)) { missing = "MyToneMapping.m_cs de type MyComputeShaders.Id"; return null; }
 
             r.Create = computeShaders.GetMethod("Create", Static, null,
                 new[] { typeof(string), typeof(ShaderMacro[]) }, null);
@@ -115,7 +115,7 @@ namespace SirCelShading
             r.ResolvedDepth = gbuffer.GetProperty("ResolvedDepthStencil", Instance);
             if (r.ResolvedDepth == null) { missing = "MyGBuffer.ResolvedDepthStencil"; return null; }
 
-            // The property is declared on the IDepthStencil interface.
+            // La propriété est déclarée sur l'interface IDepthStencil.
             r.DepthView = r.ResolvedDepth.PropertyType.GetProperty("SrvDepth", Instance);
             if (r.DepthView == null || !resource.IsAssignableFrom(r.DepthView.PropertyType))
             {
@@ -123,7 +123,7 @@ namespace SirCelShading
                 return null;
             }
 
-            // IRtvTexture, which extends ISrvBindable.
+            // IRtvTexture, qui étend ISrvBindable.
             r.Albedo = gbuffer.GetProperty("GBuffer0", Instance);
             if (r.Albedo == null || !resource.IsAssignableFrom(r.Albedo.PropertyType))
             {
@@ -149,7 +149,7 @@ namespace SirCelShading
             return result;
         }
 
-        // The scene depth, or null while the GBuffer is not ready.
+        // La profondeur de la scène, ou nul tant que le GBuffer n'est pas prêt.
         public object Depth()
         {
             var main = MainGBuffer.GetValue(null);
@@ -161,8 +161,8 @@ namespace SirCelShading
             return DepthView.GetValue(depth, null);
         }
 
-        // The scene albedo, or null while the GBuffer is not ready or when it is
-        // multisampled: the shader then keeps the game's lighting.
+        // L'albédo de la scène, ou nul tant que le GBuffer n'est pas prêt ou quand
+        // il est multi-échantillonné : le shader garde alors l'éclairage du jeu.
         public object AlbedoTexture()
         {
             var main = MainGBuffer.GetValue(null);

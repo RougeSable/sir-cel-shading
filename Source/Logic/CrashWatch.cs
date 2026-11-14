@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -7,16 +7,16 @@ using System.Text.RegularExpressions;
 
 namespace SirCelShading
 {
-    // How a crash is noticed: a marker is put in the plugin's folder when a
-    // game session starts and removed when it ends cleanly. A marker found at
-    // the next start means that session never ended: the game crashed, or
-    // was killed.
+    // Comment un plantage se reconnaît : une marque est posée dans le dossier
+    // du greffon au début d'une session de jeu et effacée à sa sortie propre.
+    // Une marque trouvée au démarrage suivant veut dire que cette session ne
+    // s'est jamais terminée : le jeu a planté, ou il a été tué.
     //
-    // The marker keeps the start of the session (UTC) and the path of its
-    // game log. The plugin then reads that log again and builds a "plantage"
-    // report: the game's CRASH INFO block, the exception that brought the
-    // game down with its stack, the last 20 error lines of the game before
-    // the end and the last 20 lines of the plugin.
+    // La marque garde le début de la session (UTC) et le chemin de son journal
+    // de jeu. Le greffon relit alors ce journal et construit un rapport
+    // « plantage » : le bloc CRASH INFO du jeu, l'exception qui a fait tomber le
+    // jeu avec sa pile, les 20 dernières lignes d'erreur du jeu avant la fin et
+    // les 20 dernières lignes du greffon.
     public static class CrashWatch
     {
         public const string MarkerName = "session.marker";
@@ -25,10 +25,10 @@ namespace SirCelShading
         public const int MaxStackLines = 80;
         public const int MaxCrashInfoLines = 40;
 
-        public const string NoException = "The game session ended without a clean exit (no exception in the game log).";
+        public const string NoException = "La session de jeu s'est terminée sans sortie propre (aucune exception dans le journal du jeu).";
         public const string CrashInfoHeading = "--- CRASH INFO ---";
-        public const string GameErrorsHeading = "--- last error lines of the game ---";
-        public const string PluginLinesHeading = "--- last lines of the plugin ---";
+        public const string GameErrorsHeading = "--- dernières lignes d'erreur du jeu ---";
+        public const string PluginLinesHeading = "--- dernières lignes du greffon ---";
 
         public sealed class PreviousSession
         {
@@ -36,8 +36,8 @@ namespace SirCelShading
             public string GameLog;
         }
 
-        // Called when a session starts. Returns the session left unfinished,
-        // if any, then puts this session's marker.
+        // Appelée au début d'une session. Rend la session restée inachevée, s'il
+        // y en a une, puis pose la marque de cette session.
         public static PreviousSession Begin(string pluginDirectory, DateTime startUtc, string gameLog)
         {
             var path = Path.Combine(pluginDirectory, MarkerName);
@@ -65,7 +65,7 @@ namespace SirCelShading
             return previous;
         }
 
-        // Called at the clean exit of the game.
+        // Appelée à la sortie propre du jeu.
         public static void End(string pluginDirectory)
         {
             try
@@ -106,9 +106,9 @@ namespace SirCelShading
             return previous;
         }
 
-        // The game log of the session that crashed: the one in the marker, or
-        // else the latest SpaceEngineers_*.log of the folder other than the
-        // current one (their names carry their date).
+        // Le journal de jeu de la session qui a planté : celui de la marque, ou
+        // sinon le dernier SpaceEngineers_*.log du dossier autre que l'actuel
+        // (leurs noms portent leur date).
         public static string FindGameLog(PreviousSession previous, string logDirectory, string currentLog)
         {
             try
@@ -148,7 +148,7 @@ namespace SirCelShading
             }
         }
 
-        // The lines of a game log the game may still hold open.
+        // Les lignes d'un journal de jeu que le jeu peut encore tenir ouvert.
         public static IEnumerable<string> ReadLines(string path)
         {
             using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
@@ -160,9 +160,10 @@ namespace SirCelShading
             }
         }
 
-        // The whole start of a session: the marker of the previous one, the
-        // crash report if it never ended, this session's marker. Null when
-        // the previous session ended cleanly. Never throws.
+        // Tout le début d'une session : la marque de la précédente, le rapport
+        // de plantage si elle ne s'est jamais terminée, la marque de celle-ci.
+        // Nul quand la session précédente s'est terminée proprement. Ne lève
+        // jamais d'exception.
         public static ErrorReport Start(string pluginDirectory, string logDirectory, string currentLog,
             DateTime startUtc, string plugin, string version, string pluginTag, ReportScrubber scrubber)
         {
@@ -198,7 +199,7 @@ namespace SirCelShading
             @"Exception occur+ed|Unhandled exception|UnhandledException",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        private static readonly Regex StillRunning = new Regex(@"application is continuing", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        private static readonly Regex StillRunning = new Regex(@"application\sis\scontinuing", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         private sealed class ExceptionBlock
         {
@@ -207,8 +208,9 @@ namespace SirCelShading
             public bool Continuing;
         }
 
-        // Reads the game log of the crashed session once, from start to end,
-        // and keeps only what the report needs: a game log can be large.
+        // Lit une seule fois le journal de jeu de la session plantée, du début à
+        // la fin, et ne garde que ce dont le rapport a besoin : un journal de jeu
+        // peut être volumineux.
         public static ErrorReport Build(PreviousSession previous, IEnumerable<string> logLines, DateTime lastWriteUtc,
             string plugin, string version, string pluginTag, ReportScrubber scrubber)
         {
@@ -231,7 +233,7 @@ namespace SirCelShading
                 var stamped = Stamped.Match(line);
                 if (!stamped.Success)
                 {
-                    // A line of a multi-line entry: the stack of an exception.
+                    // Une ligne d'une entrée sur plusieurs lignes : la pile d'une exception.
                     if (current != null && current.Stack.Count < MaxStackLines && line.Trim().Length > 0)
                         current.Stack.Add(line);
                     continue;
@@ -261,8 +263,8 @@ namespace SirCelShading
                 {
                     crashInfo = new List<string> { line };
                     capturing = crashInfo;
-                    // The exception that brought the game down is the last one
-                    // before the crash block.
+                    // L'exception qui a fait tomber le jeu est la dernière avant le
+                    // bloc de plantage.
                     fatal = lastSevere;
                     continue;
                 }
@@ -315,8 +317,8 @@ namespace SirCelShading
             return report;
         }
 
-        // Lines are kept a little beyond 20, so that 20 remain once those with
-        // player data are removed.
+        // On garde un peu plus de 20 lignes, pour qu'il en reste 20 une fois
+        // retirées celles qui portent des données du joueur.
         private static void Keep(Queue<string> lines, string line)
         {
             lines.Enqueue(line);

@@ -1,20 +1,22 @@
-using System;
+﻿using System;
 
 namespace SirCelShading
 {
     public enum CelAction
     {
-        // The message is not for the plugin: it is sent normally.
+        // Le message n'est pas pour le greffon : il part normalement.
         None,
         Toggle,
         Enable,
         Disable,
         Status,
+        Help,
         Unknown,
     }
 
-    // The player's command in the chat window. It stays on the player's
-    // machine: nothing goes to the server or to other players.
+    // La commande du joueur dans la fenêtre de tchat. Elle reste sur la
+    // machine du joueur : rien ne part vers le serveur ni vers les autres
+    // joueurs.
     public static class CelCommand
     {
         public const string Prefix = "/cel";
@@ -30,25 +32,34 @@ namespace SirCelShading
 
             var rest = t.Substring(Prefix.Length);
             if (rest.Length > 0 && !char.IsWhiteSpace(rest[0]))
-                return CelAction.None; // "/cellar" is not our command
+                return CelAction.None; // « /cellar » n'est pas notre commande
 
+            // Les options sont en français ; les anciennes graphies (on, off,
+            // status, help) restent acceptées, sans être annoncées.
             switch (rest.Trim().ToLowerInvariant())
             {
                 case "":
                     return CelAction.Toggle;
+                case "activer":
                 case "on":
                     return CelAction.Enable;
+                case "couper":
                 case "off":
                     return CelAction.Disable;
+                case "etat":
+                case "état":
                 case "status":
                     return CelAction.Status;
+                case "aide":
+                case "help":
+                    return CelAction.Help;
                 default:
                     return CelAction.Unknown;
             }
         }
 
-        // What a command does to the settings. Returns false when the command
-        // changes nothing (status, help).
+        // Ce qu'une commande fait aux réglages. Rend faux quand la commande ne
+        // change rien (état, aide).
         public static bool Apply(CelAction action, Settings settings)
         {
             switch (action)

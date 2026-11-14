@@ -1,27 +1,27 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
 namespace SirCelShading
 {
-    // The reports waiting to leave, one file each in the plugin's folder
-    // (Storage\sir-cel-shading\Reports). They leave only while the player is
-    // on one of the studio's servers; elsewhere they wait, across game
-    // launches, for the next connection to one of them.
+    // Les rapports qui attendent de partir, un fichier chacun dans le dossier
+    // du greffon (Storage\sir-cel-shading\Reports). Ils ne partent que tant que
+    // le joueur est sur l'un des serveurs du studio ; ailleurs ils attendent,
+    // d'un lancement du jeu à l'autre, la prochaine connexion à l'un d'eux.
     //
-    // Nothing here may ever break the game: a fault while writing, reading or
-    // sending is swallowed, the report stays where it is and the next try
-    // happens later.
+    // Rien ici ne doit jamais casser le jeu : une faute en écrivant, en lisant
+    // ou en envoyant est avalée, le rapport reste où il est et le prochain essai
+    // a lieu plus tard.
     public sealed class ReportQueue
     {
         public const string Extension = ".json";
 
-        // Beyond this, the oldest reports are dropped: the queue never fills
-        // the player's disk.
+        // Au-delà, les rapports les plus anciens sont abandonnés : la file ne
+        // remplit jamais le disque du joueur.
         public const int MaxFiles = 100;
 
-        // At most this many reports leave per call: never a burst of
-        // messages on joining.
+        // Au plus ce nombre de rapports part par appel : jamais une rafale de
+        // messages à la connexion.
         public const int MaxSentPerFlush = 5;
 
         private readonly string m_directory;
@@ -36,7 +36,7 @@ namespace SirCelShading
             get { return m_directory; }
         }
 
-        // Writes (or rewrites) a report. False if it could not be written.
+        // Écrit (ou réécrit) un rapport. Faux s'il n'a pas pu être écrit.
         public bool Put(string name, byte[] content)
         {
             try
@@ -44,8 +44,8 @@ namespace SirCelShading
                 System.IO.Directory.CreateDirectory(m_directory);
                 var path = Path.Combine(m_directory, name);
 
-                // Written next to the file, then swapped in: a crash of the
-                // game never leaves half a report.
+                // Écrit à côté du fichier, puis mis à sa place : un plantage du jeu
+                // ne laisse jamais la moitié d'un rapport.
                 var temporary = path + ".tmp";
                 File.WriteAllBytes(temporary, content);
                 if (File.Exists(path))
@@ -73,7 +73,8 @@ namespace SirCelShading
             }
         }
 
-        // The waiting reports, oldest first (names start with the session).
+        // Les rapports en attente, du plus ancien au plus récent (leur nom
+        // commence par la session).
         public List<string> Names()
         {
             var names = new List<string>();
@@ -103,10 +104,10 @@ namespace SirCelShading
             }
         }
 
-        // Sends the waiting reports that are ready, only on one of our
-        // servers. A report leaves the folder once sent. Returns the names
-        // sent. A failed send stops this round: the report stays and is tried
-        // again later.
+        // Envoie les rapports en attente qui sont prêts, seulement sur l'un de
+        // nos serveurs. Un rapport quitte le dossier une fois envoyé. Rend les
+        // noms envoyés. Un envoi raté arrête ce tour : le rapport reste et sera
+        // retenté plus tard.
         public List<string> Flush(bool onOurServer, Func<string, bool> ready, Func<byte[], bool> send)
         {
             var sent = new List<string>();
@@ -138,7 +139,7 @@ namespace SirCelShading
             }
             catch (Exception)
             {
-                // The send threw: the report stays for the next round.
+                // L'envoi a levé une exception : le rapport reste pour le prochain tour.
             }
             return sent;
         }

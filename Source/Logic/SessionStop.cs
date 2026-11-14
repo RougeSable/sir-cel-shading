@@ -1,19 +1,19 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
 
 namespace SirCelShading
 {
-    // The only way the effect stops: a name missing from the render engine, a
-    // variant refused by the game's compiler, a fault on the render thread, a
-    // step already used by another plugin.
+    // La seule façon dont l'effet s'arrête : un nom absent du moteur de rendu,
+    // une variante refusée par le compilateur du jeu, une faute sur le fil de
+    // rendu, une étape déjà utilisée par un autre greffon.
     //
-    // A stop lasts for the whole game session: the effect does not come back by
-    // itself, the game's rendering resumes, a line goes to the game log and the
-    // player gets a notification as soon as a game is open.
+    // Un arrêt dure toute la session de jeu : l'effet ne revient pas tout
+    // seul, le rendu du jeu reprend, une ligne part au journal du jeu et le
+    // joueur reçoit une notification dès qu'une partie est ouverte.
     //
-    // Callable from any thread: the render thread stops here, the main thread
-    // delivers the notifications.
+    // Appelable depuis n'importe quel fil : le fil de rendu s'arrête ici, le
+    // fil principal remet les notifications.
     public sealed class SessionStop
     {
         private readonly Action<string, Exception> m_log;
@@ -34,8 +34,9 @@ namespace SirCelShading
             m_log = log ?? ((detail, error) => { });
         }
 
-        // A stop whose log line is an error of the plugin (PluginLog.Error):
-        // it also gives an "erreur" report, the exception kept apart.
+        // Un arrêt dont la ligne de journal est une erreur du greffon
+        // (PluginLog.Error) : il donne aussi un rapport « erreur », l'exception
+        // gardée à part.
         public static SessionStop Logging(Action<string, Exception> logError)
         {
             return new SessionStop(logError, true);
@@ -46,21 +47,21 @@ namespace SirCelShading
             get { return Volatile.Read(ref m_stopped) != 0; }
         }
 
-        // What stopped the effect, in the words given to the player.
+        // Ce qui a arrêté l'effet, dans les mots donnés au joueur.
         public string Reason
         {
             get { return m_reason; }
         }
 
-        // True on the first stop only: later ones repeat neither the log line
-        // nor the notification.
+        // Vrai au premier arrêt seulement : les suivants ne répètent ni la
+        // ligne de journal ni la notification.
         public bool Stop(string detailForTheLog, string messageForThePlayer)
         {
             return Stop(detailForTheLog, messageForThePlayer, null);
         }
 
-        // The same, with the exception caught: it goes to the log after the
-        // detail.
+        // Pareil, avec l'exception rattrapée : elle va au journal après le
+        // détail.
         public bool Stop(string detailForTheLog, string messageForThePlayer, Exception error)
         {
             if (Interlocked.Exchange(ref m_stopped, 1) != 0)
@@ -73,20 +74,20 @@ namespace SirCelShading
             }
             catch (Exception)
             {
-                // Writing the log must not prevent the stop.
+                // Écrire le journal ne doit pas empêcher l'arrêt.
             }
             m_notifications.Enqueue(messageForThePlayer);
             return true;
         }
 
-        // A message to the player that stops nothing (a switch, for instance).
+        // Un message au joueur qui n'arrête rien (un interrupteur, par exemple).
         public void Inform(string messageForThePlayer)
         {
             m_notifications.Enqueue(messageForThePlayer);
         }
 
-        // Delivers what is waiting, but only while a game is open: in the main
-        // menu, messages wait.
+        // Remet ce qui attend, mais seulement quand une partie est ouverte :
+        // dans le menu principal, les messages patientent.
         public int Deliver(bool gameOpen, Action<string> show)
         {
             if (!gameOpen || show == null)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -81,7 +81,7 @@ namespace SirCelShading.Tests
         [Fact]
         public void APlayerOfTheFirstVersionKeepsTheSwitch()
         {
-            // The file of the first version, as it wrote it.
+            // Le fichier de la première version, tel qu'elle l'écrivait.
             Write(SettingsFile.LegacyFileName,
                 "<?xml version=\"1.0\"?>\n<Reglages xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n"
                 + "  <Active>false</Active>\n  <Teintes>6</Teintes>\n  <Epaisseur>2</Epaisseur>\n  <Force>70</Force>\n"
@@ -103,7 +103,7 @@ namespace SirCelShading.Tests
         [InlineData("")]
         public void AFileThatHeldAStyleLoadsWithoutErrorAndKeepsTheSwitchAndTheAnimatedFilmSettings(string stored)
         {
-            // What the previous version wrote: a style, and one group per style.
+            // Ce qu'écrivait la version précédente : un style, et un groupe par style.
             Write(SettingsFile.FileName,
                 "<?xml version=\"1.0\"?>\n<Settings xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n"
                 + "  <Enabled>false</Enabled>\n  <Style>" + stored + "</Style>\n"
@@ -185,7 +185,7 @@ namespace SirCelShading.Tests
         [Fact]
         public void AnUnreadableFileDoesNotBlockTheGame()
         {
-            Write(SettingsFile.FileName, "<not xml");
+            Write(SettingsFile.FileName, "<pas du xml");
 
             string problem;
             var s = SettingsFile.Load(m_directory, out problem);

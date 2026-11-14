@@ -1,20 +1,20 @@
-using System;
+﻿using System;
 using System.Xml.Serialization;
 
 namespace SirCelShading
 {
-    // The player's settings, saved in Storage\sir-cel-shading. No dependency on
-    // the game: the class is tested as is.
+    // Les réglages du joueur, enregistrés dans Storage\sir-cel-shading. Aucune
+    // dépendance au jeu : la classe est testée telle quelle.
     //
-    // The plugin has a single rendering, Animated film: the settings are the
-    // on/off switch and the Animated film group. A file written by an earlier
-    // version may hold more (a style, the groups of other styles): those
-    // elements are ignored when the file is read, and the player gets Animated
-    // film all the same.
+    // Le greffon n'a qu'un seul rendu, le film d'animation : les réglages sont
+    // l'interrupteur et le groupe AnimatedFilm. Un fichier écrit par une version
+    // antérieure peut en contenir davantage (un style, les groupes d'autres
+    // styles) : ces éléments sont ignorés à la lecture, et le joueur a quand
+    // même le film d'animation.
     [XmlRoot("Settings")]
     public class Settings
     {
-        // The first setting: the whole effect, on from installation.
+        // Le premier réglage : tout l'effet, activé dès l'installation.
         public bool Enabled { get; set; } = true;
 
         public AnimatedFilmSettings AnimatedFilm { get; set; } = new AnimatedFilmSettings();
@@ -28,8 +28,8 @@ namespace SirCelShading
             };
         }
 
-        // Brings every value back within its bounds: a file edited by hand can
-        // never produce an absurd shader variant.
+        // Ramène chaque valeur dans ses bornes : un fichier modifié à la main ne
+        // peut jamais produire une variante de shader absurde.
         public Settings Normalized()
         {
             var s = Copy();

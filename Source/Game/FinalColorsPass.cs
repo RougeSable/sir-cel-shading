@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -6,23 +6,23 @@ using VRageRender;
 
 namespace SirCelShading
 {
-    // The prefix, postfix and finalizer placed on MyToneMapping.Run, the
-    // game's final colors pass (method proven on #208).
+    // Le préfixe, le postfixe et le finaliseur posés sur MyToneMapping.Run, la
+    // passe des couleurs finales du jeu (méthode éprouvée sur #208).
     //
-    // Enabled: the prefix puts our variant in the static field of the current
-    // variant, and binds the scene depth in t31 and the albedo in t27; the
-    // postfix gives the field back its game shader and unbinds them. Disabled, or
-    // stopped: nothing is touched, the game draws with its own shaders.
+    // Activé : le préfixe met notre variante dans le champ statique de la
+    // variante en cours, et lie la profondeur de la scène en t31 et l'albédo en
+    // t27 ; le postfixe rend au champ son shader du jeu et les délie. Coupé, ou
+    // arrêté : rien n'est touché, le jeu dessine avec ses propres shaders.
     //
-    // Everything below runs on the render thread, and only there.
+    // Tout ce qui suit s'exécute sur le fil de rendu, et seulement là.
     internal static class FinalColorsPass
     {
-        // Set once by the plugin, before the patch is placed.
+        // Posés une fois par le greffon, avant que le correctif soit placé.
         public static RenderEngine Engine;
         public static SessionStop Stop;
         public static string ShaderPath;
 
-        // Snapshot of the settings, replaced as a whole by the main thread.
+        // Instantané des réglages, remplacé en bloc par le fil principal.
         private static volatile Settings s_settings = new Settings();
 
         public static Settings CurrentSettings
@@ -31,10 +31,10 @@ namespace SirCelShading
             set { s_settings = (value ?? new Settings()).Normalized(); }
         }
 
-        // Variants already created by the game, by settings signature.
+        // Variantes déjà créées par le jeu, par signature de réglages.
         private static readonly Dictionary<string, object[]> s_variants = new Dictionary<string, object[]>();
 
-        // What the prefix changed, for the postfix to give back.
+        // Ce que le préfixe a changé, pour que le postfixe le rende.
         private static FieldInfo s_replacedField;
         private static object s_gameShader;
         private static object s_boundStage;
@@ -61,10 +61,10 @@ namespace SirCelShading
                 var stage = Engine.ComputeShaderStage();
                 var depth = Engine.Depth();
                 if (stage == null || depth == null)
-                    return; // GBuffer not ready yet: this frame stays the game's
+                    return; // GBuffer pas encore prêt : cette image reste celle du jeu
 
-                // Null with multisampling: the effect then keeps the game's
-                // lighting, the rest of it still applies.
+                // Nul avec le multi-échantillonnage : l'effet garde alors
+                // l'éclairage du jeu, le reste s'applique quand même.
                 var albedo = Engine.AlbedoTexture();
 
                 var variant = ShaderVariants.Choose(
@@ -85,7 +85,7 @@ namespace SirCelShading
             {
                 GiveBack();
                 Stop.Stop(
-                    "fault on the render thread before the final colors",
+                    "faute sur le fil de rendu avant les couleurs finales",
                     Texts.StopFault, e);
             }
         }
@@ -113,13 +113,14 @@ namespace SirCelShading
             catch (Exception e)
             {
                 Stop.Stop(
-                    "fault on the render thread after the final colors",
+                    "faute sur le fil de rendu après les couleurs finales",
                     Texts.StopFault, e);
             }
         }
 
-        // The game's pass threw: the postfix did not run. The game still gets
-        // its shaders back, and the exception goes on its way.
+        // La passe du jeu a levé une exception : le postfixe ne s'est pas
+        // exécuté. Le jeu retrouve quand même ses shaders, et l'exception suit
+        // son chemin.
         public static Exception Finalizer(Exception __exception)
         {
             if (__exception != null && (s_replacedField != null || s_boundStage != null))
@@ -127,11 +128,11 @@ namespace SirCelShading
                 try { GiveBack(); }
                 catch (Exception e)
                 {
-                    SirCelShadingPlugin.LogError("could not give the game its shaders back", e);
+                    SirCelShadingPlugin.LogError("impossible de rendre ses shaders au jeu", e);
                 }
                 if (Stop != null)
                     Stop.Stop(
-                        "the final colors pass failed with our variant",
+                        "la passe des couleurs finales a échoué avec notre variante",
                         Texts.StopFault, __exception);
             }
             return __exception;
@@ -151,15 +152,15 @@ namespace SirCelShading
             {
                 var stage = s_boundStage;
                 s_boundStage = null;
-                // Unbinding a slot that was never bound is harmless.
+                // Délier un emplacement jamais lié est sans danger.
                 Engine.SetSrv.Invoke(stage, s_unbindDepth);
                 Engine.SetSrv.Invoke(stage, s_unbindAlbedo);
             }
         }
 
-        // The three variants for these settings, compiled by the game on first
-        // request. Null if one is refused: the effect is then stopped for the
-        // session, never served by halves.
+        // Les trois variantes pour ces réglages, compilées par le jeu à la
+        // première demande. Nul si l'une est refusée : l'effet est alors arrêté
+        // pour la session, jamais servi à moitié.
         private static object[] Variants(Settings settings)
         {
             var signature = ShaderVariants.Signature(settings);
@@ -174,8 +175,8 @@ namespace SirCelShading
                 var macros = RenderEngine.ToSharpDX(definitions);
                 var description = variant + " (" + string.Join(" ", definitions) + ")";
 
-                // The game's compiler first, which refuses without crashing:
-                // null, or an exception from the HLSL compiler.
+                // D'abord le compilateur du jeu, qui refuse sans planter : nul, ou
+                // une exception du compilateur HLSL.
                 byte[] code;
                 try
                 {
@@ -196,7 +197,7 @@ namespace SirCelShading
                     return null;
                 }
 
-                // Then the creation by the game, which finds it in its cache.
+                // Puis la création par le jeu, qui la trouve dans son cache.
                 try
                 {
                     ids[(int)variant] = Engine.Create.Invoke(null, new object[] { ShaderPath, macros });
@@ -212,9 +213,9 @@ namespace SirCelShading
             return ids;
         }
 
-        // Checked before the patch is placed: a missing header would make the
-        // compilation fail in the game's preprocessor, which then stops on a
-        // debug break.
+        // Vérifié avant que le correctif soit placé : un en-tête manquant ferait
+        // échouer la compilation dans le préprocesseur du jeu, qui s'arrête alors
+        // sur un point d'arrêt de débogage.
         public static string MissingHeader(string shaderDirectory)
         {
             foreach (var header in ShaderSource.GameHeaders)

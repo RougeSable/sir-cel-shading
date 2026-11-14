@@ -1,29 +1,33 @@
-namespace SirCelShading
+﻿namespace SirCelShading
 {
-    // The variant of the final colors pass (Postprocess/Tonemapping/Main.hlsl of
-    // the game), written by the plugin to the player's folder then compiled by
-    // the game itself (MyShaderCompiler.Compile, then MyComputeShaders.Create),
-    // with its own headers.
+    // La variante de la passe des couleurs finales (Postprocess/Tonemapping/Main.hlsl
+    // du jeu), écrite par le greffon dans le dossier du joueur puis compilée par
+    // le jeu lui-même (MyShaderCompiler.Compile, puis MyComputeShaders.Create),
+    // avec ses propres en-têtes.
     //
-    // Why here, in the final colors: it is the last pass that sees the whole
-    // scene, before the selection highlight, the billboards and FXAA. The
-    // interface (HUD, menus, texts) is drawn much later, by RenderMainSprites:
-    // it stays sharp.
+    // Pourquoi ici, dans les couleurs finales : c'est la dernière passe qui voit
+    // toute la scène, avant la surbrillance de sélection, les billboards et le
+    // FXAA. L'interface (HUD, menus, textes) est dessinée bien plus tard, par
+    // RenderMainSprites : elle reste nette.
+    //
+    // Le shader est écrit en ASCII pur (les commentaires HLSL sont en français
+    // sans accents) : le compilateur du jeu lit le fichier tel quel.
     public static class ShaderSource
     {
         public const string FileName = "CelShading.hlsl";
 
-        // Slot of the scene depth. No file of jeu-installe/Content/Shaders
-        // declares t31; the game's pass only uses t0 to t3.
+        // Emplacement de la profondeur de la scène. Aucun fichier de
+        // jeu-installe/Content/Shaders ne déclare t31 ; la passe du jeu n'utilise
+        // que t0 à t3.
         public const int DepthSlot = 31;
 
-        // Slot of the scene albedo (MyGBuffer.Main.GBuffer0), read by the
-        // effect. No file of Content/Shaders declares t27.
+        // Emplacement de l'albédo de la scène (MyGBuffer.Main.GBuffer0), lu par
+        // l'effet. Aucun fichier de Content/Shaders ne déclare t27.
         public const int AlbedoSlot = 27;
 
-        // Game headers the variant depends on, relative to Content/Shaders.
-        // Included between angle brackets: the game's compiler then looks for
-        // them in its own shader folder, wherever this file was written.
+        // Les en-têtes du jeu dont dépend la variante, relatifs à Content/Shaders.
+        // Inclus entre chevrons : le compilateur du jeu les cherche alors dans son
+        // propre dossier de shaders, où que ce fichier ait été écrit.
         public static readonly string[] GameHeaders =
         {
             "Postprocess/Tonemapping/Filters.hlsli",
@@ -47,12 +51,13 @@ namespace SirCelShading
         }
 
         private const string Header =
-@"// Sir Cel Shading: Animated film cel shading. Variant of
-// Postprocess/Tonemapping/Main.hlsl, written by the plugin every time the game
-// starts and compiled by the game itself. Do not edit by hand.
+@"// Sir Cel Shading : cel shading facon film d'animation. Variante de
+// Postprocess/Tonemapping/Main.hlsl, ecrite par le greffon a chaque demarrage
+// du jeu et compilee par le jeu lui-meme. Ne pas modifier a la main.
 //
-// The game's body is kept as is (grain, exposure, bloom, filmic curve, color
-// filters); the effect comes next, right before the sRGB conversion.
+// Le corps du jeu est garde tel quel (grain, exposition, halo, courbe
+// filmique, filtres de couleur) ; l'effet vient ensuite, juste avant la
+// conversion sRGB.
 
 ";
 
@@ -74,15 +79,15 @@ namespace SirCelShading
 #define CEL_HAZE 0.6f
 #endif
 
-// Distance, in pixels, between the depth reads of the outline measure.
+// Distance, en pixels, entre les lectures de profondeur de la mesure des contours.
 #define CEL_WIDTH 1
 
-// Width of the outline ramp, as a multiple of the threshold.
+// Largeur de la rampe des contours, en multiple du seuil.
 #define CEL_OUTLINE_SPAN 2
 
-// Inverse of the distance: on a flat surface, it varies linearly on screen.
-// Its second derivative is zero on a plane, and only lights up at silhouettes
-// and edges. The sky (clear depth) is zero.
+// Inverse de la distance : sur une surface plane, il varie lineairement a
+// l'ecran. Sa derivee seconde est nulle sur un plan, et ne s'allume qu'aux
+// silhouettes et aux aretes. Le ciel (profondeur vide) vaut zero.
 float CelInverseDistance(int2 texel, int2 last)
 {
     float hw = CelDepth[uint2(clamp(texel, int2(0, 0), last))];
@@ -91,9 +96,9 @@ float CelInverseDistance(int2 texel, int2 last)
     return 1.0f / max(compute_depth(hw), 1e-3f);
 }
 
-// Presence of an outline, between 0 and 1. Everything is measured as a ratio
-// of distances, never in meters: the same edge is drawn the same at one meter
-// or at ten kilometers.
+// Presence d'un contour, entre 0 et 1. Tout est mesure en rapport de
+// distances, jamais en metres : une meme arete est dessinee pareil a un metre
+// ou a dix kilometres.
 float CelOutline(uint2 texel)
 {
     uint width, height;
@@ -112,20 +117,20 @@ float CelOutline(uint2 texel)
     float ur = CelInverseDistance(p + int2( r, -r), last);
     float dl = CelInverseDistance(p + int2(-r,  r), last);
 
-    // The nearest of the neighborhood is the reference: the ratio stays
-    // bounded on both sides of a silhouette, sky included.
+    // Le plus proche du voisinage sert de reference : le rapport reste borne
+    // de part et d'autre d'une silhouette, ciel compris.
     float nearest = max(max(max(c, l), max(rt, u)), max(max(d, ul), max(max(dr, ur), dl)));
     if (nearest <= 0)
         return 0;
 
-    // Second derivative in the four directions; along the diagonals the step
-    // is longer by a factor of the square root of two.
+    // Derivee seconde dans les quatre directions ; sur les diagonales le pas
+    // est plus long d'un facteur racine de deux.
     float curvature = max(abs(l + rt - 2 * c), abs(u + d - 2 * c));
     curvature = max(curvature, 0.70710678f * max(abs(ul + dr - 2 * c), abs(ur + dl - 2 * c)));
 
-    // Divided by the angle covered by a pixel, the measure becomes the change
-    // of slope between the two faces of an edge: independent of the distance,
-    // of the screen resolution and of the field of view.
+    // Divisee par l'angle couvert par un pixel, la mesure devient le changement
+    // de pente entre les deux faces d'une arete : independant de la distance,
+    // de la resolution de l'ecran et du champ de vision.
     float pixelAngle = 2.0f / (abs(frame_.Environment.projection_matrix._22) * frame_.Screen.resolution.y);
     float measure = curvature / (nearest * r * pixelAngle);
     return smoothstep(CEL_THRESHOLD, CEL_OUTLINE_SPAN * CEL_THRESHOLD, measure);
@@ -140,7 +145,7 @@ int2 CelLastTexel()
     return min(int2(width, height), int2(frame_.Screen.resolution)) - 1;
 }
 
-// Saturation in sRGB.
+// Saturation en sRGB.
 float3 CelVivid(float3 color, float amount)
 {
     float3 srgb = rgb_to_srgb(saturate(color));
@@ -148,10 +153,10 @@ float3 CelVivid(float3 color, float amount)
     return srgb_to_rgb(saturate(lerp(gray.xxx, srgb, amount)));
 }
 
-// Light received by a surface: its final color divided by the color of the
-// object itself (albedo, from the GBuffer). 1: lit like its own color;
-// 0: full shadow. Negative when it cannot be measured (an almost black
-// object, or no albedo bound).
+// Lumiere recue par une surface : sa couleur finale divisee par la couleur
+// de l'objet lui-meme (albedo, issu du GBuffer). 1 : eclairee comme sa propre
+// couleur ; 0 : pleine ombre. Negative quand elle ne peut pas etre mesuree
+// (objet presque noir, ou aucun albedo lie).
 float CelLighting(float3 color, float3 albedo)
 {
     float a = dot(albedo, CelLuma);
@@ -160,32 +165,32 @@ float CelLighting(float3 color, float3 albedo)
     return dot(color, CelLuma) / a;
 }
 
-// Gives the surface the light 'target' instead of 'lighting', keeping its
-// hue. Where the pixel is almost black its hue means nothing: the color of
-// the object takes over.
+// Donne a la surface la lumiere 'target' au lieu de 'lighting', en gardant sa
+// teinte. Quand le pixel est presque noir sa teinte ne veut rien dire : la
+// couleur de l'objet prend le relais.
 float3 CelRelight(float3 color, float3 albedo, float lighting, float target)
 {
     float3 relit = color * min(target / max(lighting, 1e-4f), 8.0f);
     return lerp(albedo * target, relit, saturate(lighting * 4));
 }
 
-// Softness of the step between two light tones, as a fraction of a tone:
-// wide, so that shadows blend like painted ones.
+// Douceur du passage entre deux tons de lumiere, en fraction de ton :
+// large, pour que les ombres se fondent comme des ombres peintes.
 #define CEL_BAND_SOFTNESS 0.2f
-// Light of the darkest tone: shadows are colored, never black.
+// Lumiere du ton le plus sombre : les ombres sont colorees, jamais noires.
 #define CEL_SHADOW_FLOOR 0.45f
-// Saturation added by the effect.
+// Saturation ajoutee par l'effet.
 #define CEL_ANIMATED_SATURATION 1.1f
-// Width of the rim light, in pixels.
+// Largeur de la lumiere de contour, en pixels.
 #define CEL_RIM_WIDTH 3
-// Haze, in octaves of distance beyond the near plane (a ratio of distances):
-// it starts around 50 m and is complete around 25 km with the game's usual
-// near plane. Never complete: a planet stays visible.
+// Brume, en octaves de distance au-dela du plan proche (un rapport de
+// distances) : elle commence vers 50 m et est complete vers 25 km avec le plan
+// proche habituel du jeu. Jamais complete : une planete reste visible.
 #define CEL_HAZE_START 10.0f
 #define CEL_HAZE_END 19.0f
 #define CEL_HAZE_MAX 0.85f
 
-// Two or three soft tones of light, from the shadow floor to full light.
+// Deux ou trois tons de lumiere doux, du plancher d'ombre a la pleine lumiere.
 float CelShadeBands(float lighting)
 {
     const float steps = CEL_SHADE_TONES - 1;
@@ -196,7 +201,8 @@ float CelShadeBands(float lighting)
     return lerp(CEL_SHADOW_FLOOR, 1.0f, q / steps);
 }
 
-// Outlines take a darker, deeper shade of the object's own color.
+// Les contours prennent une teinte plus sombre et plus profonde de la couleur
+// propre de l'objet.
 float3 CelInk(float3 color)
 {
     return color * color * 0.4f;
@@ -208,9 +214,9 @@ float CelDistanceOrSky(int2 p, int2 last)
     return IsDepthForeground(hw) ? compute_depth(hw) : 1e30f;
 }
 
-// How much this pixel lies on the near side of a silhouette: something at
-// least a third farther, or the sky, within a few pixels. A ratio of
-// distances, never meters.
+// A quel point ce pixel est du cote proche d'une silhouette : quelque chose
+// au moins un tiers plus loin, ou le ciel, a quelques pixels. Un rapport de
+// distances, jamais des metres.
 float CelSilhouette(int2 p, int2 last, float dist)
 {
     const int w = CEL_RIM_WIDTH;
@@ -220,7 +226,7 @@ float CelSilhouette(int2 p, int2 last, float dist)
     return saturate((farthest / dist - 1.3f) * 3);
 }
 
-// A thin edge of sunlight on silhouettes seen against the sun.
+// Un fin lisere de lumiere solaire sur les silhouettes vues a contre-jour.
 float3 CelRimLight(float3 color, int2 p, int2 last, float dist, float2 uv)
 {
     float3 ray = normalize(view_to_world(compute_screen_ray(uv)));
@@ -236,8 +242,9 @@ float3 CelRimLight(float3 color, int2 p, int2 last, float dist, float2 uv)
     return saturate(color + tint * rim * 0.8f);
 }
 
-// The game's grading of a scene color, without grain or bloom: the sky
-// samples below are HDR, the image they blend into is not.
+// L'etalonnage du jeu pour une couleur de scene, sans grain ni halo : les
+// echantillons de ciel ci-dessous sont en HDR, l'image dans laquelle ils se
+// fondent ne l'est pas.
 float3 CelGrade(float3 hdr)
 {
     float3 color = hdr;
@@ -252,9 +259,9 @@ float3 CelGrade(float3 hdr)
     return saturate(color);
 }
 
-// Each thread of a group reads one point of a fixed grid over the whole
-// screen. Every group reads the same points: the sky color changes smoothly
-// from pixel to pixel, for one read per pixel.
+// Chaque fil d'un groupe lit un point d'une grille fixe sur tout l'ecran.
+// Tous les groupes lisent les memes points : la couleur du ciel change
+// doucement d'un pixel a l'autre, pour une lecture par pixel.
 groupshared float4 CelSkySamples[NUMTHREADS_X * NUMTHREADS_Y];
 
 void CelGatherSky(uint2 groupThread, int2 last)
@@ -268,8 +275,9 @@ void CelGatherSky(uint2 groupThread, int2 last)
     GroupMemoryBarrierWithGroupSync();
 }
 
-// The sky color around this pixel: the nearest samples weigh most, those
-// above the pixel more than those below. Alpha is zero when no sky is seen.
+// La couleur du ciel autour de ce pixel : les echantillons les plus proches
+// pesent le plus, ceux au-dessus du pixel plus que ceux en dessous. L'alpha
+// vaut zero quand aucun ciel n'est vu.
 float4 CelSkyColor(float2 uv)
 {
     float3 sum = 0;
@@ -289,7 +297,7 @@ float4 CelSkyColor(float2 uv)
     return float4(CelGrade(sum / weight), 1);
 }
 
-// Aerial perspective: the farther, the more a thing fades into the sky.
+// Perspective aerienne : plus une chose est loin, plus elle se fond dans le ciel.
 float CelHazeAmount(float dist)
 {
     float nearPlane = max(compute_depth(1.0f), 1e-6f);
@@ -300,7 +308,7 @@ float CelHazeAmount(float dist)
 [numthreads(NUMTHREADS_X, NUMTHREADS_Y, 1)]
 void __compute_shader(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
-    // The game's, unchanged (Postprocess/Tonemapping/Main.hlsl).
+    // Celui du jeu, inchange (Postprocess/Tonemapping/Main.hlsl).
     uint2 texel = dispatchThreadID.xy;
     float2 uv = (texel + 0.5f) / frame_.Screen.resolution;
 
@@ -341,7 +349,7 @@ void __compute_shader(uint3 dispatchThreadID : SV_DispatchThreadID)
     // Sir Cel Shading.
     int2 last = CelLastTexel();
     int2 p = min(int2(texel), last);
-    // Every thread of the group, before any branch: it waits for the others.
+    // Chaque fil du groupe, avant tout branchement : il attend les autres.
     CelGatherSky(texel % uint2(NUMTHREADS_X, NUMTHREADS_Y), last);
 
     float hw = CelDepth[uint2(p)];
@@ -363,13 +371,13 @@ void __compute_shader(uint3 dispatchThreadID : SV_DispatchThreadID)
         if (haze > 0.004f)
         {
             float4 sky = CelSkyColor(uv);
-            // Under a black sky (space) there is no air to fade into.
+            // Sous un ciel noir (l'espace) il n'y a pas d'air ou se fondre.
             haze *= sky.a * saturate(dot(sky.rgb, CelLuma) * 4);
             color = lerp(color, sky.rgb, haze);
         }
     }
 
-    // The game's, unchanged.
+    // Celui du jeu, inchange.
     color = rgb_to_srgb(color);
 #ifdef FILL_ALPHA_LUMINANCE
     float alpha = GetRelativeLuminance(color);

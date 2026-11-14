@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text;
 using Sandbox.Graphics.GUI;
 using VRage.Utils;
@@ -6,12 +6,12 @@ using VRageMath;
 
 namespace SirCelShading
 {
-    // The plugin's settings, opened from Pulsar. Every change applies to the
-    // next frame and is saved at once: the player sees the effect behind the
-    // screen, without restarting the game.
+    // Les réglages du greffon, ouverts depuis Pulsar. Chaque changement
+    // s'applique à l'image suivante et est enregistré aussitôt : le joueur voit
+    // l'effet derrière l'écran, sans relancer le jeu.
     //
-    // First the Enable plugin checkbox, then the settings of the rendering,
-    // Animated film, the only one there is.
+    // D'abord la case « Activer le greffon », puis les réglages du rendu, film
+    // d'animation, le seul qui existe.
     internal sealed class SettingsScreen : MyGuiScreenBase
     {
         private const float Width = 0.62f;
@@ -21,9 +21,9 @@ namespace SirCelShading
         private const float ValueColumn = 0.27f;
         private const float LineSpacing = 0.07f;
 
-        // A dragged slider changes value at every notch, and every new value
-        // asks the game to compile the effect. We wait for the player to pause
-        // a moment before applying.
+        // Un curseur que l'on tire change de valeur à chaque cran, et chaque
+        // nouvelle valeur demande au jeu de compiler l'effet. On attend que le
+        // joueur marque une pause avant d'appliquer.
         private static readonly TimeSpan SliderDelay = TimeSpan.FromMilliseconds(400);
 
         private readonly SirCelShadingPlugin m_plugin;
@@ -53,7 +53,7 @@ namespace SirCelShading
 
             var y = -Height / 2 + 0.13f;
 
-            // First setting, always: the checkbox that turns everything on or off.
+            // Premier réglage, toujours : la case qui active ou coupe tout.
             AddLabel(Texts.EnableCheckbox, Texts.EnableCheckboxHelp, y);
             var enable = new MyGuiControlCheckbox(new Vector2(ControlColumn, y), null, Texts.EnableCheckboxHelp, m_settings.Enabled);
             enable.IsCheckedChanged = c =>

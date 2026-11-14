@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Xunit;
 
 namespace SirCelShading.Tests
@@ -11,10 +11,10 @@ namespace SirCelShading.Tests
             var log = new List<string>();
             var stop = new SessionStop(log.Add);
 
-            Assert.True(stop.Stop("technical detail", Texts.StopVariantRefused));
+            Assert.True(stop.Stop("détail technique", Texts.StopVariantRefused));
 
             Assert.True(stop.IsStopped);
-            Assert.Equal(new[] { "technical detail" }, log);
+            Assert.Equal(new[] { "détail technique" }, log);
             Assert.Equal(Texts.StopVariantRefused, stop.Reason);
 
             var seen = new List<string>();
@@ -28,23 +28,23 @@ namespace SirCelShading.Tests
             var log = new List<string>();
             var stop = new SessionStop(log.Add);
 
-            stop.Stop("first", "first message");
+            stop.Stop("premier", "premier message");
             Assert.False(stop.Stop("second", "second message"));
 
             Assert.True(stop.IsStopped);
             Assert.Single(log);
-            Assert.Equal("first message", stop.Reason);
+            Assert.Equal("premier message", stop.Reason);
 
             var seen = new List<string>();
             stop.Deliver(true, seen.Add);
-            Assert.Equal(new[] { "first message" }, seen);
+            Assert.Equal(new[] { "premier message" }, seen);
         }
 
         [Fact]
         public void InTheMenuNotificationsWaitForAGame()
         {
             var stop = new SessionStop(null);
-            stop.Stop("detail", "message");
+            stop.Stop("détail", "message");
 
             var seen = new List<string>();
             Assert.Equal(0, stop.Deliver(false, seen.Add));
@@ -73,12 +73,12 @@ namespace SirCelShading.Tests
         public void SteppingAsideTellsThePlayer()
         {
             var stop = new SessionStop(null);
-            stop.Stop("patched by other.plugin", string.Format(Texts.StopCoexistence, "other.plugin"));
+            stop.Stop("modifié par autre.greffon", string.Format(Texts.StopCoexistence, "autre.greffon"));
 
             var status = Texts.Status(true, stop.Reason);
             Assert.StartsWith(Texts.StopPrefix, status);
-            Assert.Contains("other.plugin", status);
-            Assert.Contains("steps aside", status);
+            Assert.Contains("autre.greffon", status);
+            Assert.Contains("s'efface", status);
         }
     }
 }

@@ -1,17 +1,19 @@
-using System;
+﻿using System;
 
 namespace SirCelShading
 {
-    // The plugin's lines in the game log, all prefixed with [sir-cel-shading].
+    // Les lignes du greffon dans le journal du jeu, toutes préfixées par
+    // [sir-cel-shading].
     //
-    // An error line, with or without a caught exception, also goes to the
-    // error reporter: every error the plugin writes to the game log gives an
-    // "erreur" report. Plain lines are kept as context for the reports.
+    // Une ligne d'erreur, avec ou sans exception rattrapée, va aussi au
+    // rapporteur d'erreurs : chaque erreur que le greffon écrit au journal du
+    // jeu donne un rapport « erreur ». Les lignes simples sont gardées comme
+    // contexte des rapports.
     //
-    // Callable from any thread, never throws.
+    // Appelable depuis n'importe quel fil, ne lève jamais d'exception.
     public sealed class PluginLog
     {
-        public const string ErrorMark = "ERROR: ";
+        public const string ErrorMark = "ERREUR : ";
 
         private readonly string m_prefix;
         private readonly Action<string> m_write;

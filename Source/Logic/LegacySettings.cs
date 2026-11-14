@@ -1,11 +1,11 @@
-using System.Xml.Serialization;
+﻿using System.Xml.Serialization;
 
 namespace SirCelShading
 {
-    // The settings file of the first version, element names included: they are
-    // the names that file really contains. Only the on/off switch is kept; the
-    // rest of that file (the settings of a rendering that no longer exists) is
-    // ignored when it is read.
+    // Le fichier de réglages de la première version, noms d'éléments compris :
+    // ce sont les noms que ce fichier contient vraiment. Seul l'interrupteur
+    // est gardé ; le reste du fichier (les réglages d'un rendu qui n'existe plus)
+    // est ignoré à la lecture.
     [XmlRoot("Reglages")]
     public class LegacySettings
     {

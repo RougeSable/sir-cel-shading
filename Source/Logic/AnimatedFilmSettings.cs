@@ -1,8 +1,8 @@
-namespace SirCelShading
+﻿namespace SirCelShading
 {
-    // Animated film: shadows in two or three soft tones, thin outlines in a
-    // darker shade of the object, rim light on backlit silhouettes, distant
-    // things fading into the sky.
+    // Film d'animation : ombres en deux ou trois tons doux, contours fins d'une
+    // teinte plus sombre de l'objet, lumière de contour sur les silhouettes à
+    // contre-jour, choses lointaines qui se fondent dans le ciel.
     public class AnimatedFilmSettings
     {
         public const int ShadeTonesMin = 2;
@@ -21,16 +21,16 @@ namespace SirCelShading
         public const int HazeMax = 100;
         public const int HazeDefault = 60;
 
-        // Number of light tones on a surface, shadow included.
+        // Nombre de tons de lumière sur une surface, ombre comprise.
         public int ShadeTones { get; set; } = ShadeTonesDefault;
 
-        // Outline strength, in percent.
+        // Force des contours, en pourcentage.
         public int OutlineStrength { get; set; } = OutlineStrengthDefault;
 
-        // Rim light on silhouettes seen against the sun, in percent.
+        // Lumière de contour sur les silhouettes vues contre le soleil, en pourcentage.
         public int RimLight { get; set; } = RimLightDefault;
 
-        // How much distant things fade into the sky color, in percent.
+        // À quel point les choses lointaines se fondent dans la couleur du ciel, en pourcentage.
         public int Haze { get; set; } = HazeDefault;
 
         public AnimatedFilmSettings Copy()

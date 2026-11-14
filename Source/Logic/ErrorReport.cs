@@ -1,28 +1,29 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
 namespace SirCelShading
 {
-    // One report sent to the server, in the form fixed by the rule of the
-    // studio's client-side plugins ("error reports"): a UTF-8 JSON object
+    // Un rapport envoyé au serveur, dans la forme fixée par la règle des
+    // greffons côté joueur du studio (« rapport d'erreurs ») : un objet JSON
+    // en UTF-8
     //   { greffon, version, genre, message, pile, premiere, derniere,
     //     nombre, session, lignes }
-    // The field names and the two kinds ("erreur", "plantage") are part of
-    // that shared form: every plugin of the studio uses the same ones, and
-    // the server reads them as they are.
+    // Les noms des champs et les deux genres (« erreur », « plantage ») font
+    // partie de cette forme commune : tous les greffons du studio utilisent les
+    // mêmes, et le serveur les lit tels quels.
     //
-    // Nothing about the player goes in a report: everything is scrubbed
-    // (ReportScrubber) before it gets here.
+    // Rien sur le joueur n'entre dans un rapport : tout est nettoyé
+    // (ReportScrubber) avant d'arriver ici.
     public sealed class ErrorReport
     {
         public const string KindError = "erreur";
         public const string KindCrash = "plantage";
 
-        // Above this size the report is shortened: older lines first, then
-        // the stack. A report always stays well below what the game's
-        // network messages carry.
+        // Au-delà de cette taille, le rapport est raccourci : les lignes les plus
+        // anciennes d'abord, puis la pile. Un rapport reste toujours bien en
+        // deçà de ce que portent les messages réseau du jeu.
         public const int MaxBytes = 32000;
         public const int MaxLineLength = 1000;
 
@@ -37,7 +38,7 @@ namespace SirCelShading
         public DateTime Session;
         public List<string> Lines = new List<string>();
 
-        // ISO 8601, in UTC, to the millisecond: 2026-10-27T20:31:12.734Z
+        // ISO 8601, en UTC, à la milliseconde : 2026-10-27T20:31:12.734Z
         public static string IsoUtc(DateTime time)
         {
             var utc = time.Kind == DateTimeKind.Local ? time.ToUniversalTime() : time;
@@ -68,8 +69,8 @@ namespace SirCelShading
             return json.ToString();
         }
 
-        // The bytes sent to the server: UTF-8 without byte order mark, never
-        // above MaxBytes.
+        // Les octets envoyés au serveur : UTF-8 sans marque d'ordre des octets,
+        // jamais au-dessus de MaxBytes.
         public byte[] ToUtf8()
         {
             var encoding = new UTF8Encoding(false);
